@@ -224,6 +224,12 @@ ru:{tagline:'Игры · подписки · пополнения — быстр
   manualNote:'Товара нет в автовыдаче, но продавец может выдать вручную — просто напишите ему.',
   favAdd:'⭐ Добавить в избранное',favRm:'💛 В избранном — убрать',
   stgift:'Steam-подарки',stgiftMeta:'любая игра — в подарок на ваш аккаунт',
+  stPay:'💳 Steam Пополнение',stPayMeta:'по логину или кодом',
+  stKeys:'🔑 Steam Ключи',stKeysMeta:'ключи активации игр',
+  stGiftRow:'🎁 Steam Подарки',stGiftRowMeta:'игра прямо в вашу библиотеку',
+  byLogin:'💳 Пополнение по логину',byLoginMeta:'любая сумма на ваш аккаунт',
+  byCode:'🎟 Коды пополнения',byCodeMeta:'код Steam Wallet по региону',
+  stPayPick:'Выберите способ пополнения:',
   topupRow:'🔑 <b>Пополнение по логину</b>',
   topupMeta:'₽ рубли · ₸ тенге · ₴ гривны · $ доллары — зачисление прямо на аккаунт',
   giftHdr:'🎁 Пополнение подарочными картами (коды кошелька)',
@@ -252,6 +258,12 @@ en:{tagline:'Games · subscriptions · top-ups — fast & safe',
   manualNote:'This item is not in auto-delivery, but the seller can deliver it manually — just message them.',
   favAdd:'⭐ Add to favorites',favRm:'💛 In favorites — remove',
   stgift:'Steam Gifts',stgiftMeta:'any game gifted to your account',
+  stPay:'💳 Steam Top-Up',stPayMeta:'by login or code',
+  stKeys:'🔑 Steam Keys',stKeysMeta:'game activation keys',
+  stGiftRow:'🎁 Steam Gifts',stGiftRowMeta:'a game straight to your library',
+  byLogin:'💳 Top-up by login',byLoginMeta:'any amount to your account',
+  byCode:'🎟 Top-up codes',byCodeMeta:'Steam Wallet code by region',
+  stPayPick:'Choose a top-up method:',
   topupRow:'🔑 <b>Top-up by login</b>',
   topupMeta:'₽ RUB · ₸ KZT · ₴ UAH · $ USD — credited straight to your account',
   giftHdr:'🎁 Gift card top-up (wallet codes)',
@@ -263,12 +275,14 @@ en:{tagline:'Games · subscriptions · top-ups — fast & safe',
   openKb:'Open the shop via the «🛒 Open shop» button at the bottom of the bot chat and try again.',
   loadFail:'Failed to load the catalog.<br>Please refresh the page.',
   sellerMsg:n=>'Hello! I want to buy: '+n+' — it is marked "out of stock", please deliver manually.',
-  dept:{steam:'Steam Top-Up',ps:'PlayStation',xbox:'Xbox',giftcards:'Gift Cards',
-        mobile:'Mobile Game Top-Ups',games:'PC Games & Keys',subs:'Subscriptions & Services'}}
+  dept:{steam:'Steam',ps:'PlayStation',xbox:'Xbox',giftcards:'Gift Cards',
+        mobile:'Mobile Game Top-Ups',games:'Games (other)',subs:'Subscriptions & Services'}}
 };
 /* подгруппы из каталога приходят по-русски — переводим словарём в EN-режиме */
 const GRP_EN={
   '🎟 Коды пополнения (по регионам)':'🎟 Top-up codes (by region)',
+  '💳 Пополнение по логину (любая сумма)':'💳 Top-up by login (any amount)',
+  '🔑 Steam Ключи (игры)':'🔑 Steam Keys (games)',
   '💳 Пополнение PS Store (Wallet)':'💳 PS Store wallet top-up',
   '💿 Игры и дополнения Xbox':'💿 Xbox games & add-ons',
   '🎁 Другие карты':'🎁 Other cards',
@@ -402,7 +416,8 @@ function goBack(){
   }
   else if(view.t==='grp') openDept(view.di);
   else if(view.t==='dept') cats();
-  else if(view.t==='topup') openDept(steamDeptIdx());
+  else if(view.t==='sttop') openDept(view.di!=null?view.di:steamDeptIdx());
+  else if(view.t==='topup') steamTopup(steamDeptIdx());
   else home();
 }
 function rerender(){
@@ -413,6 +428,7 @@ function rerender(){
   else if(view.t==='cat') openCat(view.di,view.gi,view.ci);
   else if(view.t==='favs') favScreen();
   else if(view.t==='prod') prod(view.id, view.from, view.qty);
+  else if(view.t==='sttop') steamTopup(view.di!=null?view.di:steamDeptIdx());
   else if(view.t==='topup') topupScreen();
   else if(view.t==='search') doSearch(document.getElementById('q').value);
 }
@@ -484,13 +500,6 @@ function deptGrid(){
       <img src="img/${d.k}.jpg" onerror="this.parentElement.classList.add('noimg');this.remove()">
       <div class="ov"></div><span class="emoji">${d.i}</span>
       <div class="tx"><div class="tt">${esc(deptTitle(d))}</div><div class="ct">${cnt} ${t('goods')}</div></div></div>`;
-    if(d.k==='steam'){
-      // Steam-подарки — отдельный поток в боте (поиск игры → издание → регион)
-      g+=`<div class="dtile" onclick="stgiftGo()">
-        <img src="img/steamgift.jpg" onerror="this.parentElement.classList.add('noimg');this.remove()">
-        <div class="ov"></div><span class="emoji">🎁</span>
-        <div class="tx"><div class="tt">${t('stgift')}</div><div class="ct">${t('stgiftMeta')}</div></div></div>`;
-    }
   });
   return g+'</div>';
 }
@@ -510,11 +519,21 @@ function openDept(i){
   const d=DATA.depts[i];
   let s=crumb(d.i+' '+esc(deptTitle(d)), 'cats');
   if(d.k==='steam'){
-    s+=`<div class="row" onclick="topupScreen()" style="border-color:var(--accent)">
-      <div><div class="nm">${t('topupRow')}</div>
-      <div class="meta">${t('topupMeta')}</div></div>
+    // как в боте: Пополнение (→ логин/коды), Ключи, Подарки
+    const gi_keys=steamGrpIdx(d,['ключи','keys']);
+    s+=`<div class="row" onclick="steamTopup(${i})" style="border-color:var(--accent)">
+      <div><div class="nm">${t('stPay')}</div><div class="meta">${t('stPayMeta')}</div></div>
       <div class="ar">›</div></div>`;
-    s+=`<div class="sec-title">${t('giftHdr')}</div>`;
+    if(gi_keys!=null){
+      const kn=d.g[gi_keys].c.reduce((a,c)=>a+c.sv.length,0);
+      s+=`<div class="row" onclick="openGrp(${i},${gi_keys})">
+        <div><div class="nm">${t('stKeys')}</div><div class="meta">${kn} ${t('items')}</div></div>
+        <div class="ar">›</div></div>`;
+    }
+    s+=`<div class="row" onclick="stgiftGo()">
+      <div><div class="nm">${t('stGiftRow')}</div><div class="meta">${t('stGiftRowMeta')}</div></div>
+      <div class="ar">›</div></div>`;
+    h(s); return;
   }
   const grps=realGroups(d);
   if(grps.length===1){
@@ -553,7 +572,7 @@ function openGrp(i,gi){
 function topupScreen(){
   hap('light');
   view={t:'topup'}; setBack();
-  let s=crumb(t('tTitle'), `openDept(${steamDeptIdx()})`);
+  let s=crumb(t('tTitle'), `steamTopup(${steamDeptIdx()})`);
   s+=`<div class="pname">${t('tH')}</div>
   <div class="pcat">${t('tSub')}</div>
   <div class="pbadges" style="margin-top:10px">
@@ -568,6 +587,30 @@ function topupScreen(){
 }
 function steamDeptIdx(){
   let r=0; DATA.depts.forEach((d,i)=>{ if(d.k==='steam') r=i; }); return r;
+}
+function steamGrpIdx(d,needles){
+  for(let gi=0;gi<d.g.length;gi++){
+    const n=(d.g[gi].n||'').toLowerCase();
+    if(needles.some(w=>n.includes(w))) return gi;
+  }
+  return null;
+}
+/* экран «Steam Пополнение» → выбор: по логину или коды */
+function steamTopup(i){
+  hap('light');
+  const d=DATA.depts[i]; view={t:'sttop',di:i}; setNav('cats'); setBack();
+  const gi_codes=steamGrpIdx(d,['коды','code']);
+  let s=crumb('💳 '+t('stPay'), `openDept(${i})`);
+  s+=`<div class="row" onclick="topupScreen()" style="border-color:var(--accent)">
+    <div><div class="nm">${t('byLogin')}</div><div class="meta">${t('byLoginMeta')}</div></div>
+    <div class="ar">›</div></div>`;
+  if(gi_codes!=null){
+    const cn2=d.g[gi_codes].c.reduce((a,c)=>a+c.sv.length,0);
+    s+=`<div class="row" onclick="openGrp(${i},${gi_codes})">
+      <div><div class="nm">${t('byCode')}</div><div class="meta">${cn2} ${t('items')}</div></div>
+      <div class="ar">›</div></div>`;
+  }
+  h(s);
 }
 function topupGo(code){
   hap('medium');
