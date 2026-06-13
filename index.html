@@ -195,8 +195,7 @@ const tg = window.Telegram ? window.Telegram.WebApp : null;
 if(tg){
   try{ tg.ready(); }catch(e){}
   try{ tg.expand(); }catch(e){}
-  // на весь экран + не закрывать приложение случайным свайпом вниз при скролле
-  try{ tg.requestFullscreen && tg.requestFullscreen(); }catch(e){}
+  // не закрывать приложение случайным свайпом вниз при скролле (мобилки)
   try{ tg.disableVerticalSwipes && tg.disableVerticalSwipes(); }catch(e){}
   // высота вьюпорта Telegram → CSS-переменная (стабильно на iOS/Android)
   const setVH=()=>{ try{ document.documentElement.style.setProperty('--tgvh',
