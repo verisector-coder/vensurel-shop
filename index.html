@@ -437,7 +437,7 @@ function rerender(){
 /* ── hero ── */
 function heroHtml(){
   $hero.innerHTML = `<div class="hero">
-    <img src="img/main.jpg" onerror="this.style.display='none'">
+    <img src="img/main.jpg?v=${DATA.ts||''}" onerror="this.style.display='none'">
     <div class="ov"></div>
     <div class="tx"><div class="nm">🦝 ${esc(DATA.name||'Vensurel Shop')}</div>
     <div class="tg2">${t('tagline')}</div></div></div>`;
@@ -498,7 +498,7 @@ function deptGrid(){
   DATA.depts.forEach((d,i)=>{
     const cnt=d.g.reduce((a,gr)=>a+gr.c.reduce((b,c)=>b+c.sv.length,0),0);
     g+=`<div class="dtile" onclick="openDept(${i})">
-      <img src="img/${d.k}.jpg" onerror="this.parentElement.classList.add('noimg');this.remove()">
+      <img src="img/${d.k}.jpg?v=${DATA.ts||''}" onerror="this.parentElement.classList.add('noimg');this.remove()">
       <div class="ov"></div><span class="emoji">${d.i}</span>
       <div class="tx"><div class="tt">${esc(deptTitle(d))}</div><div class="ct">${cnt} ${t('goods')}</div></div></div>`;
   });
@@ -662,7 +662,7 @@ function prod(id, from, qty){
   badges+= sv.s? `<span class="badge">${t('auto')}</span>`:`<span class="badge">${t('manual')}</span>`;
   const tot=calcTot(qty);
   let s=`
-    <div class="pban"><img src="img/${d.k}.jpg" onerror="this.parentElement.style.display='none'"></div>
+    <div class="pban"><img src="img/${d.k}.jpg?v=${DATA.ts||''}" onerror="this.parentElement.style.display='none'"></div>
     <div class="pname">${lgi(sv,22)}${esc(nm(sv))}</div>
     <div class="pcat">${d.i} ${esc(deptTitle(d))} · ${esc((lang()==='en'&&sv.cate)?sv.cate:sv.cat)}</div>
     <div class="pprice">${money(tot)}</div>
