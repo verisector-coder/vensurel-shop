@@ -377,6 +377,22 @@ function money(p){
 function h(html){ $app.innerHTML='<div class="fade">'+html+'</div>'; window.scrollTo(0,0); }
 function soldOf(id){ return (DATA.sold && DATA.sold[String(id)]) || 0; }
 function esc(s){return String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));}
+/* поиск по русскому написанию брендов + транслитерация */
+var _ALIASES={'стим':'steam','стима':'steam','нетфликс':'netflix','нэтфликс':'netflix','дискорд':'discord','нитро':'nitro','ютуб':'youtube','ютюб':'youtube','спотифай':'spotify','спотифи':'spotify','телеграм':'telegram','телега':'telegram','эпл':'apple','айфон':'apple','айтюнс':'itunes','айклауд':'icloud','плейстейшн':'playstation','пс':'playstation','псн':'psn','иксбокс':'xbox','хбокс':'xbox','нинтендо':'nintendo','свитч':'switch','виза':'visa','мастеркард':'mastercard','пайпал':'paypal','бинанс':'binance','гитхаб':'github','инстаграм':'instagram','инста':'instagram','вотсап':'whatsapp','ватсап':'whatsapp','фейсбук':'facebook','гугл':'google','гмаил':'gmail','эпик':'epic','роблокс':'roblox','робукс':'robux','майнкрафт':'minecraft','фортнайт':'fortnite','валорант':'valorant','геншин':'genshin','хонкай':'honkai','пубг':'pubg','чатгпт':'chatgpt','опенаи':'openai','бравлстарс':'brawl stars','подписка':'subscription','подписки':'subscription','пополнение':'top up topup','гифт':'gift'};
+var _TR={'а':'a','б':'b','в':'v','г':'g','д':'d','е':'e','ё':'e','ж':'zh','з':'z','и':'i','й':'y','к':'k','л':'l','м':'m','н':'n','о':'o','п':'p','р':'r','с':'s','т':'t','у':'u','ф':'f','х':'h','ц':'ts','ч':'ch','ш':'sh','щ':'sch','ъ':'','ы':'y','ь':'','э':'e','ю':'yu','я':'ya'};
+function translitRu(s){ if(!/[а-яё]/.test(s)) return s; var o=''; for(var i=0;i<s.length;i++){ o+=(_TR[s[i]]!==undefined?_TR[s[i]]:s[i]); } return o; }
+function expandTerm(w){ var v=[w]; for(var k in _ALIASES){ if(w===k||(w.length>=3&&(k.indexOf(w)>=0||w.indexOf(k)>=0))) v=v.concat(_ALIASES[k].split(' ')); } var tr=translitRu(w); if(tr&&tr!==w) v.push(tr); return v; }
+/* имя товара без дублирующего префикса категории (оставить отличие — номинал) */
+function shortName(name, catName){ var n=String(name||''), c=String(catName||''); if(c && n.toLowerCase().indexOf(c.toLowerCase())===0){ var rest=n.slice(c.length).replace(/^[\s·\-—|•:]+/,'').trim(); return rest||n; } return n; }
+/* «как получите» по типу товара */
+function deliveryHint(name, cat){ var s=(String(name||'')+' '+String(cat||'')).toLowerCase();
+  if(s.indexOf('по логин')>=0 || (s.indexOf('пополнен')>=0 && s.indexOf('код')<0 && s.indexOf('wallet')<0)) return '👤 Пополним аккаунт по логину';
+  if(s.indexOf('wallet')>=0 || s.indexOf('кошел')>=0 || (s.indexOf('код')>=0 && s.indexOf('пополнен')>=0)) return '💳 Код пополнения — активируете сами';
+  if(/подарочн|gift ?card|гифт/.test(s)) return '🎟 Код карты — активируете на аккаунте';
+  if(/ключ|cd-?key|\bkey\b/.test(s)) return '🔑 Ключ активации';
+  if(/подписк|premium|subscription|game ?pass|plus/.test(s)) return '✅ Доступ / код подписки';
+  return '📩 Данные придут в чат после оплаты';
+}
 
 function buildIndex(){
   idx=[]; byId={}; catOf={};
@@ -453,13 +469,14 @@ function heroHtml(){
 }
 
 /* ── карточки списков ── */
-function cardHtml(sv, from){
+function cardHtml(sv, from, catName){
   const sold=soldOf(sv.id);
   const hot = sold ? `<div class="hot">${t('bought')(sold)}</div>` : '';
   const oos = sv.s? '' : `<div class="oos">${t('oosCard')}</div>`;
   const star = `<button class="fv ${isFav(sv.id)?'on':''}" onclick='toggleFav(${sv.id},event)'>⭐</button>`;
+  const disp = catName ? shortName(nm(sv), catName) : nm(sv);
   return `<div class="card" onclick='prod(${sv.id},"${from}")'>
-    <div><div class="nm">${lgi(sv,16)}${esc(nm(sv))}</div><div class="pr">${money(sv.p)}</div>${hot}${oos}</div>
+    <div><div class="nm">${lgi(sv,16)}${esc(disp)}</div><div class="pr">${money(sv.p)}</div>${hot}${oos}</div>
     <div class="right">${star}<span class="ar2">›</span></div></div>`;
 }
 
@@ -636,7 +653,7 @@ function openCat(i,gi,ci){
   let s=crumb(d.i+' '+esc(cn(c)), backFn) + chipsHtml();
   const list=applyFilters(c.sv.map(x=>byId[x.id]).filter(Boolean));
   if(!list.length) s+=`<div class="empty">${t('noFilter')}</div>`;
-  list.forEach(sv=> s+=cardHtml(sv,'cat'));
+  list.forEach(sv=> s+=cardHtml(sv,'cat', cn(c)));
   h(s);
 }
 
@@ -672,13 +689,19 @@ function prod(id, from, qty){
   if(sold) badges+=`<span class="badge g">${t('bought')(sold)}</span>`;
   badges+= sv.s? `<span class="badge">${t('auto')}</span>`:`<span class="badge">${t('manual')}</span>`;
   const tot=calcTot(qty);
+  const cnm=(lang()==='en'&&sv.cate)?sv.cate:sv.cat;
+  const _dt=shortName(nm(sv), cnm);
+  const subLine=(_dt && _dt!==cnm)? `<div class="pcat" style="font-weight:600;color:var(--text)">🔸 ${esc(_dt)}</div>` : '';
+  const hintLine=`<div class="pcat" style="margin-top:8px">${esc(deliveryHint(nm(sv), sv.cat))}</div>`;
   let s=`
     <div class="pban"><img src="img/${d.k}.jpg?v=${DATA.ts||''}" onerror="this.parentElement.style.display='none'"></div>
-    <div class="pname">${lgi(sv,22)}${esc(nm(sv))}</div>
-    <div class="pcat">${d.i} ${esc(deptTitle(d))} · ${esc((lang()==='en'&&sv.cate)?sv.cate:sv.cat)}</div>
+    <div class="pname">${lgi(sv,22)}${esc(cnm)}</div>
+    ${subLine}
+    <div class="pcat">${d.i} ${esc(deptTitle(d))}</div>
     <div class="pprice">${money(tot)}</div>
     ${(qty>1 || sv.op)? `<div class="pcat" style="margin-top:-4px;opacity:.75">${money(sv.p)} ${lang()==='en'?'/ pc':'/ шт'}${(sv.op && DATA.opAdd)? ' · +'+money(DATA.opAdd)+(lang()==='en'?' / order':' / заказ'):''}</div>`:''}
     <div class="pbadges">${badges}</div>
+    ${hintLine}
     ${(sv.d||sv.de)? `<div class="pdesc" style="margin-top:12px;white-space:pre-line">${esc((lang()==='en'&&sv.de)?sv.de:sv.d)}</div>`:''}
     ${(sv.op && sv.mq>1)? (function(){
         // AI-товары: пресеты количества (как тиры у поставщика) + ручной ввод
@@ -730,7 +753,7 @@ function doSearch(q){
   if(!q){ home(); return; }
   view={t:'search'}; setBack();
   const terms=q.split(/\s+/);
-  let res=idx.filter(x=>{const t=(x.n+' '+(x.ne||'')+' '+x.cat+' '+(x.cate||'')).toLowerCase();return terms.every(w=>t.includes(w));});
+  let res=idx.filter(x=>{const t=(x.n+' '+(x.ne||'')+' '+x.cat+' '+(x.cate||'')).toLowerCase();return terms.every(w=>expandTerm(w).some(v=>t.includes(v)));});
   res=applyFilters(res).slice(0,60);
   let s=chipsHtml();
   if(!res.length){ h(s+`<div class="empty">${t('notFound')}</div>`); return; }
