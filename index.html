@@ -194,7 +194,9 @@ button{font-family:inherit}
 const tg = window.Telegram ? window.Telegram.WebApp : null;
 if(tg){
   try{ tg.ready(); }catch(e){}
-  // tg.expand() removed — was forcing fullscreen
+  // expand() — на всю ВЫСОТУ окна Telegram (нужно на телефоне). Полноэкранный
+  // режим (requestFullscreen) НЕ зовём — именно он растягивал на весь монитор.
+  try{ tg.expand(); }catch(e){}
   // не закрывать приложение случайным свайпом вниз при скролле (мобилки)
   try{ tg.disableVerticalSwipes && tg.disableVerticalSwipes(); }catch(e){}
   // высота вьюпорта Telegram → CSS-переменная (стабильно на iOS/Android)
