@@ -293,6 +293,7 @@ const GRP_EN={
   '🎟 Коды пополнения (по регионам)':'🎟 Top-up codes (by region)',
   '💳 Пополнение по логину (любая сумма)':'💳 Top-up by login (any amount)',
   '🔑 Steam Ключи (игры)':'🔑 Steam Keys (games)',
+  '💳 Пополнение PlayStation (карта/кошелёк)':'💳 PlayStation top-up (card/wallet)',
   '💳 Пополнение PS Store (Wallet)':'💳 PS Store wallet top-up',
   '💿 Игры и дополнения Xbox':'💿 Xbox games & add-ons',
   '🎁 Другие карты':'🎁 Other cards',
@@ -693,6 +694,13 @@ function prod(id, from, qty){
   const _dt=shortName(nm(sv), cnm);
   const subLine=(_dt && _dt!==cnm)? `<div class="pcat" style="font-weight:600;color:var(--text)">🔸 ${esc(_dt)}</div>` : '';
   const hintLine=`<div class="pcat" style="margin-top:8px">${esc(deliveryHint(nm(sv), sv.cat))}</div>`;
+  let sibsHtml='';
+  try{
+    const _C=DATA.depts[sv.di].g[sv.gi].c[sv.ci];
+    const _others=_C.sv.map(x=>byId[x.id]).filter(x=>x && x.id!==sv.id);
+    _others.sort((a,b)=>(b.s-a.s));
+    if(_others.length) sibsHtml=`<div class="sec-title">${lang()==='en'?'Other options':'Другие варианты'}</div>`+_others.slice(0,8).map(o=>cardHtml(o,'cat',cnm)).join('');
+  }catch(e){}
   let s=`
     <div class="pban"><img src="img/${d.k}.jpg?v=${DATA.ts||''}" onerror="this.parentElement.style.display='none'"></div>
     <div class="pname">${lgi(sv,22)}${esc(cnm)}</div>
@@ -728,7 +736,8 @@ function prod(id, from, qty){
       : `<button class="bigbuy" disabled>${t('oos')}</button>
          <button class="bigbuy" style="margin-top:8px" onclick="contactSeller(${id})">${t('contact')}</button>
          <div class="empty" style="padding:12px 0 0">${t('manualNote')}</div>`}
-    <button class="pfav" onclick="toggleFav(${id})">${isFav(id)?t('favRm'):t('favAdd')}</button>`;
+    <button class="pfav" onclick="toggleFav(${id})">${isFav(id)?t('favRm'):t('favAdd')}</button>
+    ${sibsHtml}`;
   h(s);
 }
 function qch(d){
