@@ -763,11 +763,19 @@ function doSearch(q){
   view={t:'search'}; setBack();
   const terms=q.split(/\s+/);
   let res=idx.filter(x=>{const t=(x.n+' '+(x.ne||'')+' '+x.cat+' '+(x.cate||'')).toLowerCase();return terms.every(w=>expandTerm(w).some(v=>t.includes(v)));});
-  res=applyFilters(res).slice(0,60);
+  res=applyFilters(res);
+  // группируем результаты по КАТЕГОРИЯМ (а не по отдельным номиналам) — шире охват
+  const seen={}, cats=[];
+  res.forEach(x=>{const k=x.di+'.'+x.gi+'.'+x.ci; if(seen[k])return; seen[k]=1; cats.push(x);});
+  // ходовые регионы вперёд (Турция и т.п.)
+  const pop={tr:0,ua:1,kz:2,in:3,usd:4,usa:4,uk:5};
+  const reg=nm=>{let m=99; String(nm).split('|').forEach(p=>{const c=p.trim().toLowerCase(); if(pop[c]!=null)m=Math.min(m,pop[c]);}); return m;};
+  cats.sort((a,b)=> reg(a.cat)-reg(b.cat) || String(a.cat).localeCompare(String(b.cat)));
+  const list=cats.slice(0,40);
   let s=chipsHtml();
-  if(!res.length){ h(s+`<div class="empty">${t('notFound')}</div>`); return; }
-  s+=`<div class="sec-title">${t('found')} ${res.length}</div>`;
-  res.forEach(sv=> s+=cardHtml(sv,'search'));
+  if(!list.length){ h(s+`<div class="empty">${t('notFound')}</div>`); return; }
+  s+=`<div class="sec-title">${t('found')} ${list.length}</div>`;
+  list.forEach(x=>{ const c=DATA.depts[x.di].g[x.gi].c[x.ci]; s+=catRow(x.di,x.gi,x.ci,c); });
   h(s);
 }
 
