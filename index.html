@@ -312,6 +312,12 @@ function lgi(sv,sz){ // логотип бренда картинкой (из б�
 function cn(c){ return (lang()==='en' && c.ne)? c.ne : c.n; }          // имя категории
 function gn(g){ const l=g.n||''; return lang()==='en'? (GRP_EN[l]||l) : l; }  // имя подгруппы
 function lang(){ try{ return localStorage.getItem('vs_lang')||''; }catch(e){ return ''; } }
+function detectLang(){   // язык по настройкам Telegram пользователя (требование каталога)
+  try{
+    var lc=((tg&&tg.initDataUnsafe&&tg.initDataUnsafe.user&&tg.initDataUnsafe.user.language_code)||'').toLowerCase().split('-')[0];
+    return ['ru','uk','be','kk','ky','uz','tg','hy','az'].indexOf(lc)>=0 ? 'ru' : 'en';
+  }catch(e){ return 'ru'; }
+}
 function t(k){ const L=T[lang()||'ru']||T.ru; return (L[k]!==undefined)?L[k]:T.ru[k]; }
 function deptTitle(d){ const L=T[lang()||'ru']||T.ru; return (L.dept&&L.dept[d.k])||d.t; }
 function setLang(l){
@@ -833,7 +839,8 @@ if(tg && tg.BackButton){ tg.onEvent('backButtonClicked', goBack); }
 applyLang();
 fetch('catalog.json?v='+Date.now()).then(r=>r.json()).then(d=>{
   DATA=d; buildIndex();
-  if(!lang()) langScreen(); else home();
+  if(!lang()){ try{ localStorage.setItem('vs_lang', detectLang()); }catch(e){} applyLang(); }
+  home();   // язык берём из Telegram автоматически; сменить можно кнопкой EN/RU
 }).catch(()=>{ $app.innerHTML=`<div class="empty">${t('loadFail')}</div>`; });
 </script>
 </body>
