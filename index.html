@@ -837,7 +837,13 @@ document.getElementById('q').addEventListener('input',e=>{
 if(tg && tg.BackButton){ tg.onEvent('backButtonClicked', goBack); }
 
 applyLang();
-fetch('catalog.json?v='+Date.now()).then(r=>r.json()).then(d=>{
+// 01.09.2026: каталог берём живым с сервера магазина (обновляется каждые 30 мин),
+// а файл рядом со страницей — только резерв, если сервер недоступен.
+const LIVE_CATALOG='https://pay.zamon.app/vshop/catalog.json';
+fetch(LIVE_CATALOG+'?v='+Date.now())
+  .then(r=>{ if(!r.ok) throw new Error('live '+r.status); return r.json(); })
+  .catch(()=>fetch('catalog.json?v='+Date.now()).then(r=>r.json()))
+  .then(d=>{
   DATA=d; buildIndex();
   if(!lang()){ try{ localStorage.setItem('vs_lang', detectLang()); }catch(e){} applyLang(); }
   home();   // язык берём из Telegram автоматически; сменить можно кнопкой EN/RU
