@@ -356,12 +356,17 @@ const tg=window.Telegram?.WebApp;
 const CDN='https://zamon.app';
 const BOT='TarkonGameBot';
 
-/* ── Catalogs Config ── */
-const PLANS={
-  p2:{l:'П2',d:'Общий аккаунт\nонлайн',f:1},
-  p1:{l:'П1',d:'На ваш аккаунт\nнавсегда',f:1.8},
-  p3:{l:'П3',d:'Общий аккаунт\nонлайн+офлайн',f:1.25},
+/* ── Pricing: EXACT match to zamon.js ── */
+/* DG_MODES: коэффициенты к цене в гривнах (UAH) украинского PS Store */
+const DG_MODES={
+  p2:{l:'П2',d:'Общий аккаунт\nтолько онлайн',k:0.30,desc:'Самый дешёвый — вход через выданный аккаунт'},
+  p3:{l:'П3',d:'Онлайн + оффлайн',k:0.61,desc:'Со своего профиля, работает и без интернета'},
+  p1:{l:'П1',d:'На ваш аккаунт\nнавсегда',k:1.25,desc:'Игра навсегда ваша, все DLC и сохранения'},
 };
+/* П1 регионы и валюты — цены берутся из reg{} в games-data.json */
+const P1_REGIONS=[['ua','Украина'],['tr','Турция'],['in','Индия'],['pl','Польша'],['us','США']];
+const REG_CUR={ua:'UAH',tr:'TRY',in:'INR',pl:'PLN',us:'USD'};
+const INR_BUY=1000/13; /* закупка Индии: 1000₹ = $13 */
 const MODES={S:'Одиночная',SO:'Одиночная / Сеть',SCL:'Кооп (лок.)',OC:'Кооп (сеть)'};
 const SUBS=[
   {id:'chatgpt',n:'ChatGPT',d:'Go · Plus · Pro',img:'/img/subs/chatgpt.png',u:'/podpiska-chatgpt',from:669},
@@ -390,11 +395,14 @@ const GIFTS=[
 
 /* ── State ── */
 const Z={
-  scr:'home',hist:[],favs:new Set(),cur:'RUB',rate:2.45,usdRate:92,
+  scr:'home',hist:[],favs:new Set(),
+  /* Курсы валют — живые с er-api.com, фоллбэки = сайту (07.2026) */
+  UAH_RUB:1.78, /* fallback ₴→₽ */
+  RATES:{USD:1,RUB:80,UAH:45,TRY:47.5,INR:95,PLN:3.74,KZT:474,KGS:87,UZS:11950},
   ps:null,psD:null,psDeals:null,
   steam:null,shelves:null,
   xbox:null,reviews:null,searchIdx:null,
-  _mainCb:null,_searchT:null,
+  _mainCb:null,_searchT:null,_selPlan:'p2',_selEd:0,_selCons:'PS5',_selReg:0,
   filter:{ps:'all',steam:'all'},sort:{ps:'default'},
 };
 
@@ -428,9 +436,22 @@ Z.init=function(){
   }
 
   Z.renderHome();
+  Z.loadRates();
   Z.loadPS();
   Z.loadSearch();
   Z.updFavBadge();
+};
+
+/* ── Live exchange rates (= zamon.js logic) ── */
+Z.loadRates=async function(){
+  try{
+    const d=await(await fetch('https://open.er-api.com/v6/latest/USD')).json();
+    if(d&&d.rates){
+      const r=d.rates;
+      ['RUB','UAH','TRY','INR','PLN','KZT','KGS','UZS','TJS'].forEach(c=>{if(r[c])Z.RATES[c]=r[c]});
+      if(r.RUB&&r.UAH){Z.UAH_RUB=r.RUB/r.UAH}
+    }
+  }catch(e){console.warn('Rates fallback',e)}
 };
 
 Z.syncUI=function(){
@@ -469,8 +490,21 @@ function $(id){return document.getElementById(id)}
 Z.haptic=function(s){tg?.HapticFeedback?.impactOccurred(s||'light')};
 Z.toast=function(msg){const t=$('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2200)};
 Z.esc=function(s){const d=document.createElement('div');d.textContent=s;return d.innerHTML};
-Z.fmtP=function(p){return Math.round(p).toLocaleString('ru-RU')+' ₽'};
-Z.psP=function(uah){return Math.ceil(uah*Z.rate/10)*10-1};
+Z.fmtP=function(p){if(p==null)return'—';return Math.round(p).toLocaleString('ru-RU')+' ₽'};
+/* dgPrice: ТОЧНАЯ формула сайта — uah * UAH_RUB * k, округление до 10 */
+Z.dgPrice=function(uah,k){return Math.max(300,Math.round(uah*Z.UAH_RUB*k/10)*10)};
+/* regP1Price: П1 от региональных цен стора */
+Z.regP1Price=function(local,regKey,mult){
+  const rc=REG_CUR[regKey];if(!local||!rc||!Z.RATES[rc])return null;
+  const rate=rc==='INR'?INR_BUY:Z.RATES[rc];
+  const usd=local/rate*1.25*(mult||1);
+  return Math.max(300,Math.round(usd*Z.RATES.RUB/10)*10);
+};
+/* Формат дип-линка покупки: zmn_<id>_<план>_<издание>_<консоль> */
+Z.zmnPay=function(id,plan,ei,cons){
+  const code='zmn_'+id+'_'+plan+'_'+(ei||0)+'_'+(cons==='PS4'?'ps4':'ps5');
+  return 'https://pay.zamon.app/zpay?c='+code;
+};
 Z.showMain=function(txt,cb){if(!tg?.MainButton)return;tg.MainButton.setText(txt);tg.MainButton.show();tg.MainButton.onClick(cb);Z._mainCb=cb};
 Z.hideMain=function(){if(!tg?.MainButton)return;tg.MainButton.hide();if(Z._mainCb){tg.MainButton.offClick(Z._mainCb);Z._mainCb=null}};
 
@@ -559,9 +593,9 @@ Z.dealTimer=function(end){
 };
 
 Z.psCard=function(id,g){
-  const p=Z.psP(g.uah);
+  const p2=Z.dgPrice(g.uah,0.30); /* П2 — самый дешёвый, показываем на карточке */
   const deal=g.deal&&g.deal.end*1000>Date.now();
-  const dp=deal?Z.psP(g.deal.disc):null;
+  const dp2=deal?Z.dgPrice(g.deal.disc,0.30):null;
   const pct=deal?Math.round((1-g.deal.disc/g.deal.full)*100):0;
   const img=Z.psD?.[id]?.edimg?.['0']||Z.psD?.[id]?.hero||Z.psD?.[id]?.shots?.[0]||'';
   const timer=deal?Z.dealTimer(g.deal.end):'';
@@ -576,7 +610,7 @@ Z.psCard=function(id,g){
     <div class="gc-body">
       <div class="gc-name">${Z.esc(g.n)}</div>
       <div class="gc-price">
-        ${deal?`<span class="gc-old">${Z.fmtP(p)}</span>`:''}<span class="gc-from">от </span>${Z.fmtP(dp||p)}
+        ${deal?`<span class="gc-old">${Z.fmtP(p2)}</span>`:''}<span class="gc-from">от </span>${Z.fmtP(dp2||p2)}
       </div>
       ${timer?`<div class="gc-deal-end">⏱ ${timer}</div>`:''}
     </div>
@@ -819,17 +853,32 @@ Z.renderPD_PS=function(id){
   const d=Z.psD?.[id]||{};
   const hero=d.hero||d.shots?.[0]||d.edimg?.['0']||'';
   const eds=g.eds||[['Standard',g.uah]];
-  const baseP=Z.psP(eds[0][1]);
+  const isPreorder=!!g.pre;
+  Z._selEd=0;Z._selPlan=isPreorder?'p3':'p2';Z._selCons=g.ps4?'PS5':'PS5';Z._selReg=0;Z._pdId=id;
 
+  /* Цены изданий по П2 (для показа в списке) */
   const edsH=eds.map((e,i)=>{
-    const p=Z.psP(e[1]);const deal=i===0&&g.deal?Z.psP(g.deal.disc):g.deal_eds?.[i]?Z.psP(g.deal_eds[i].disc):null;
-    return`<div class="ed${i===0?' on':''}" onclick="Z._pickEd(this,${i},'${id}')"><div class="ed-dot"></div><span class="ed-n">${Z.esc(e[0])}</span><span class="ed-p">${deal?`<span class="ed-p-old">${Z.fmtP(p)}</span>`:''} ${Z.fmtP(deal||p)}</span></div>`;
+    const uah=e[1];const p2=Z.dgPrice(uah,0.30);
+    return`<div class="ed${i===0?' on':''}" onclick="Z._pdPickEd(${i})"><div class="ed-dot"></div><span class="ed-n">${Z.esc(e[0])}</span><span class="ed-p">${Z.fmtP(p2)}</span></div>`;
   }).join('');
 
-  const planH=Object.entries(PLANS).map(([k,v])=>{
-    const pp=Math.ceil(baseP*v.f/10)*10-1;
-    return`<div class="plan${k==='p2'?' on':''}" onclick="Z._pickPlan(this,'${k}')"><b>${v.l}</b><small>${v.d.replace('\n','<br>')}</small><div class="plan-p">${Z.fmtP(pp)}</div></div>`;
+  /* Планы П2/П3 (+ П1 отдельным блоком) */
+  const modes=isPreorder?['p3']:['p2','p3'];
+  const uah0=eds[0][1];
+  const modesH=modes.map(k=>{const m=DG_MODES[k];const p=Z.dgPrice(uah0,m.k);
+    return`<div class="plan${k===Z._selPlan?' on':''}" onclick="Z._pdPickPlan('${k}')"><b>${m.l}</b><small>${m.d.replace('\n','<br>')}</small><div class="plan-p">${Z.fmtP(p)}</div></div>`;
   }).join('');
+
+  /* П1 — региональные цены */
+  const p1H=P1_REGIONS.map(([rk,rn],ri)=>{
+    const local=d.reg?.[rk];
+    const edMult=eds.length>1?(eds[Z._selEd][1]/eds[0][1]):1;
+    const p=local!=null?Z.regP1Price(local,rk,edMult):rk==='ua'?Z.dgPrice(uah0,1.25):null;
+    if(p==null)return'';
+    return`<div class="ed${ri===0?' on':''}" onclick="Z._pdPickP1(${ri},'${rk}')"><div class="ed-dot"></div><span class="ed-n">🌍 ${Z.esc(rn)}</span><span class="ed-p">${Z.fmtP(p)}</span></div>`;
+  }).filter(Boolean).join('');
+
+  const curPrice=Z._pdCurPrice(id);
 
   el.innerHTML=`<div class="pd">
     ${hero?`<img class="pd-hero" src="${hero}" alt="" loading="lazy">`:''}
@@ -841,7 +890,6 @@ Z.renderPD_PS=function(id){
             <span>${g.ps4?'PS4 / PS5':'PS5'}</span>
             ${d.mode?`<span>· ${MODES[d.mode]||d.mode}</span>`:''}
             ${g.deal?`<span class="pd-tag pd-tag-sale">-${Math.round((1-g.deal.disc/g.deal.full)*100)}%</span>`:''}
-            ${g.plus?'<span class="pd-tag pd-tag-ok">PS+</span>':''}
           </div>
         </div>
         <button class="gc-fav${Z.isFav('ps_'+id)?' on':''}" data-fav="ps_${id}" style="position:static;width:38px;height:38px;background:var(--bg2)"
@@ -854,27 +902,72 @@ Z.renderPD_PS=function(id){
     ${(d.shots||[]).length?`<div class="shots">${d.shots.slice(0,8).map(s=>`<img src="${s}" alt="" loading="lazy">`).join('')}</div>`:''}
     <div class="pd-body" style="padding-top:2px">
       ${(d.why||[]).length?`<div class="sec-t" style="margin-bottom:8px">🎯 Почему стоит сыграть</div>${d.why.map(w=>`<div class="why"><b>${Z.esc(w[0])}</b><p>${Z.esc(w[1])}</p></div>`).join('')}<div style="height:14px"></div>`:''}
-      <div class="sec-t" style="margin-bottom:6px">📦 Издание</div>
-      <div class="ed-list">${edsH}</div>
-      <div class="sec-t" style="margin-bottom:6px">🔑 Тип активации</div>
-      <div class="plan-row">${planH}</div>
-      <button class="btn btn-primary" onclick="Z.buyPS('${id}')">🛒 Купить за ${Z.fmtP(baseP)}</button>
+
+      ${g.ps4?`<div class="sec-t" style="margin-bottom:6px">🎮 Консоль</div>
+        <div class="filters" style="padding:0 0 10px">${['PS5','PS4'].map(c=>`<button class="chip${Z._selCons===c?' on':''}" onclick="Z._pdPickCons('${c}')">${c}</button>`).join('')}</div>`:''}
+
+      ${eds.length>1?`<div class="sec-t" style="margin-bottom:6px">📦 Издание</div><div class="ed-list">${edsH}</div>`:''}
+
+      <div class="sec-t" style="margin-bottom:6px">💰 Выдача аккаунта — дешевле</div>
+      <div class="plan-row" style="grid-template-columns:repeat(${modes.length},1fr)">${modesH}</div>
+      ${isPreorder?'<p style="font-size:.72rem;color:var(--text2);margin:-8px 0 10px">П2 станет доступен после релиза игры</p>':''}
+
+      ${p1H?`<div class="sec-t" style="margin-bottom:6px">🔑 На ваш аккаунт (П1) — навсегда</div><div class="ed-list" id="pdP1List">${p1H}</div>`:''}
+
+      <div style="margin-top:12px;padding:10px 12px;border-radius:12px;background:var(--bg2);display:flex;align-items:center;gap:8px;font-size:.76rem;color:var(--text2)">
+        <span>⚡</span><span>Выдача 10–15 мин · Не выдали — вернём деньги · Оплата СБП или крипта</span>
+      </div>
+
+      <button class="btn btn-primary" style="margin-top:14px" id="pdBuyBtn" onclick="Z.buyPS('${id}')">🛒 Купить за ${Z.fmtP(curPrice)}</button>
     </div>
   </div>`;
-  Z.showMain(`🛒 Купить — ${Z.fmtP(baseP)}`,()=>Z.buyPS(id));
+  Z.showMain(`🛒 Купить — ${Z.fmtP(curPrice)}`,()=>Z.buyPS(id));
 };
 
-Z._pickEd=function(el,i,id){el.closest('.ed-list').querySelectorAll('.ed').forEach(e=>e.classList.remove('on'));el.classList.add('on');Z.haptic('light')};
-Z._pickPlan=function(el,k){el.closest('.plan-row').querySelectorAll('.plan').forEach(e=>e.classList.remove('on'));el.classList.add('on');Z.haptic('light');
-  // Update price on button
-  const g=Z.ps?.[Z._curPsId()];if(!g)return;
-  const edIdx=[...el.closest('.pd-body').parentElement.querySelectorAll('.ed')].findIndex(e=>e.classList.contains('on'));
-  const eds=g.eds||[['Standard',g.uah]];const uah=eds[edIdx>=0?edIdx:0][1];
-  const p=Math.ceil(Z.psP(uah)*PLANS[k].f/10)*10-1;
-  el.closest('.pd-body').querySelector('.btn-primary').textContent=`🛒 Купить за ${Z.fmtP(p)}`;
-  Z.hideMain();Z.showMain(`🛒 Купить — ${Z.fmtP(p)}`,()=>Z.buyPS(Z._curPsId()));
+/* Расчёт текущей цены по выбранным параметрам */
+Z._pdCurPrice=function(id){
+  const g=Z.ps?.[id];if(!g)return 0;
+  const d=Z.psD?.[id]||{};
+  const eds=g.eds||[['Standard',g.uah]];
+  const uah=eds[Z._selEd]?.[1]||eds[0][1];
+  const plan=Z._selPlan;
+  if(plan==='p1'){
+    const rk=P1_REGIONS[Z._selReg]?.[0]||'ua';
+    const local=d.reg?.[rk];
+    const edMult=eds.length>1?(uah/eds[0][1]):1;
+    return local!=null?Z.regP1Price(local,rk,edMult):(rk==='ua'?Z.dgPrice(uah,1.25):Z.dgPrice(uah,1.25));
+  }
+  return Z.dgPrice(uah,DG_MODES[plan]?.k||0.30);
 };
-Z._curPsId=function(){const m=location.hash.match(/ps_(\d+)/);return m?m[1]:Z.hist.length?Z.hist[Z.hist.length-1]?.p?.id:null};
+
+Z._pdPickEd=function(i){
+  Z._selEd=i;Z.haptic('light');
+  document.querySelectorAll('.ed-list .ed').forEach((e,j)=>e.classList.toggle('on',j===i));
+  Z._pdUpdPrice();
+};
+Z._pdPickPlan=function(k){
+  Z._selPlan=k;Z.haptic('light');
+  document.querySelectorAll('.plan-row .plan').forEach(e=>e.classList.remove('on'));
+  document.querySelector(`.plan-row .plan:nth-child(${k==='p2'?1:2})`)?.classList.add('on');
+  // Deselect P1
+  document.querySelectorAll('#pdP1List .ed').forEach(e=>e.classList.remove('on'));
+  Z._pdUpdPrice();
+};
+Z._pdPickP1=function(ri,rk){
+  Z._selPlan='p1';Z._selReg=ri;Z.haptic('light');
+  document.querySelectorAll('.plan-row .plan').forEach(e=>e.classList.remove('on'));
+  document.querySelectorAll('#pdP1List .ed').forEach((e,j)=>e.classList.toggle('on',j===ri));
+  Z._pdUpdPrice();
+};
+Z._pdPickCons=function(c){
+  Z._selCons=c;Z.haptic('light');
+  document.querySelectorAll('.filters .chip').forEach(b=>b.classList.toggle('on',b.textContent===c));
+};
+Z._pdUpdPrice=function(){
+  const id=Z._pdId;const p=Z._pdCurPrice(id);
+  const btn=$('pdBuyBtn');if(btn)btn.textContent='🛒 Купить за '+Z.fmtP(p);
+  Z.hideMain();Z.showMain('🛒 Купить — '+Z.fmtP(p),()=>Z.buyPS(id));
+};
 
 Z.renderPD_ST=function(id){
   const el=$('s-product'),g=Z.steam?.[id];if(!g){el.innerHTML='<div class="empty"><div class="empty-ico">🔍</div><div class="empty-msg">Игра не найдена</div></div>';return}
@@ -929,7 +1022,7 @@ Z._execS=function(q){
   // PS
   if(Z.ps)for(const[id,g]of Object.entries(Z.ps)){
     const nl=g.n.toLowerCase();if(nl.includes(q)||nl.includes(ql))
-      res.push({t:'ps',id,n:g.n,p:Z.psP(g.uah),img:Z.psD?.[id]?.edimg?.['0']||'',pl:'PS'});
+      res.push({t:'ps',id,n:g.n,p:Z.dgPrice(g.uah,0.30),img:Z.psD?.[id]?.edimg?.['0']||'',pl:'PS'});
   }
   // Search index (Steam+Xbox)
   if(Z.searchIdx)for(const it of Z.searchIdx){
@@ -961,9 +1054,21 @@ Z.renderFavs=function(){
 };
 
 /* ═══ ACTIONS ═══ */
-Z.buyPS=function(id){Z.haptic('medium');Z.openSite('/games#'+id)};
+Z.buyPS=function(id){
+  Z.haptic('medium');
+  const plan=Z._selPlan;
+  /* Формируем код для pay.zamon.app: zmn_<id>_<план>_<издание>_<консоль> */
+  let planCode=plan;
+  if(plan==='p1'){
+    const regKeys=['u','t','i','p','s'];
+    planCode='p1'+(regKeys[Z._selReg]||'u');
+  }
+  const url=Z.zmnPay(id,planCode,Z._selEd,Z._selCons);
+  Z.openLink(url);
+};
 Z.buySteam=function(id){Z.haptic('medium');Z.openSite('/steam#'+id)};
-Z.openSite=function(path){const u=CDN+path;tg?.openLink?tg.openLink(u):open(u,'_blank')};
+Z.openSite=function(path){const u=CDN+path;Z.openLink(u)};
+Z.openLink=function(url){tg?.openLink?tg.openLink(url):open(url,'_blank')};
 Z.openBot=function(sec){
   const start=sec?`start=${sec}`:'start=catalog';
   if(tg){tg.openTelegramLink(`https://t.me/${BOT}?${start}`);tg.close()}
