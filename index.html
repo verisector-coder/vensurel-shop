@@ -495,7 +495,24 @@ Z.updFavBadge=function(){
 Z.isFav=function(k){return Z.favs.has(k)};
 
 /* ═══ DATA ═══ */
-Z.fetchJ=async function(u){const r=await fetch(u);if(!r.ok)throw r.status;return r.json()};
+Z.fetchJ=async function(u){
+  // Try fetch first; if CORS blocks, fall back to script-tag JSONP trick
+  try{const r=await fetch(u);if(!r.ok)throw r.status;return r.json()}
+  catch(e){
+    // Fallback: load JSON via injected script that assigns to window.__jsonp
+    return new Promise((ok,no)=>{
+      const cb='__zj'+Math.random().toString(36).slice(2,8);
+      // We create a tiny service worker proxy or use a public CORS proxy
+      // For now, try loading as script (works if JSON happens to be valid JS assignment)
+      // This won't work for raw JSON, so we use a public CORS proxy as last resort
+      const proxy='https://corsproxy.io/?'+encodeURIComponent(u);
+      fetch(proxy).then(r=>r.json()).then(ok).catch(()=>{
+        console.warn('Both direct and proxy fetch failed for',u);
+        no(e);
+      });
+    });
+  }
+};
 Z.loadScript=function(u){return new Promise((ok,no)=>{const s=document.createElement('script');s.src=u;s.onload=ok;s.onerror=no;document.head.appendChild(s)})};
 
 Z.loadPS=async function(){
@@ -503,19 +520,22 @@ Z.loadPS=async function(){
   try{
     const[c,d]=await Promise.all([Z.fetchJ(CDN+'/ru-catalog.json'),Z.fetchJ(CDN+'/ps-plus-deals.json').catch(()=>null)]);
     Z.ps=c.games||c;Z.psDeals=d;
-    // Background: full game data
-    Z.fetchJ(CDN+'/games-data.json').then(x=>{Z.psD=x;Z.renderHome()}).catch(()=>{});
-  }catch(e){console.warn('PS:',e);Z.ps={}}
+    // Background: full game data (757KB gzipped ~200KB)
+    Z.fetchJ(CDN+'/games-data.json').then(x=>{Z.psD=x;
+      // Re-render home to add images to cards
+      if(Z.scr==='home')Z.renderHome();
+    }).catch(()=>{});
+  }catch(e){console.warn('PS load failed:',e);Z.ps={}}
 };
 Z.loadSteam=async function(){
   if(Z.steam)return;
   try{await Z.loadScript(CDN+'/steam-catalog.js');Z.steam=window.CATALOG||{};Z.shelves=window.SHELVES||{}}
-  catch(e){console.warn('Steam:',e);Z.steam={}}
+  catch(e){console.warn('Steam load failed:',e);Z.steam={}}
 };
 Z.loadXbox=async function(){
   if(Z.xbox)return;
   try{await Z.loadScript(CDN+'/xbox-catalog.js');Z.xbox=window.XBOX||{}}
-  catch(e){console.warn('Xbox:',e);Z.xbox={}}
+  catch(e){console.warn('Xbox load failed:',e);Z.xbox={}}
 };
 Z.loadSearch=async function(){
   if(Z.searchIdx)return;
