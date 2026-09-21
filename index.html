@@ -318,14 +318,14 @@ Z.toggleFav=(k,ev)=>{ev?.stopPropagation();ev?.preventDefault();const h=Z.favs.h
 /* ═══ Card builders ═══ */
 Z.timer=end=>{const ms=end*1000-Date.now();if(ms<=0)return'';const h=Math.floor(ms/36e5),d=Math.floor(h/24);return d>3?d+' дн':d>=1?d+'д '+h%24+'ч':h+'ч'};
 
-Z.psC=(id,g)=>{const p2=Z.dgP(g.uah,.30),deal=g.deal&&g.deal.end*1000>Date.now(),dp=deal?Z.dgP(g.deal.disc,.30):null,
+Z.psC=(id,g)=>{const isPre=!!g.pre,minK=isPre?.61:.30,minP=Z.dgP(g.uah,minK),deal=g.deal&&g.deal.end*1000>Date.now(),dp=deal?Z.dgP(g.deal.disc,minK):null,
   pct=deal?Math.round((1-g.deal.disc/g.deal.full)*100):0,img=Z.psD?.[id]?.edimg?.['0']||Z.psD?.[id]?.hero||Z.psD?.[id]?.shots?.[0]||'',tm=deal?Z.timer(g.deal.end):'';
   return`<div class="gc" onclick="Z.go('product',{t:'ps',id:'${id}'})">
-    <div class="gc-media">${img?`<img src="${img}" loading="lazy" onload="this.classList.add('ld')">`:''}
+    <div class="gc-media">${img?`<img src="${img}" loading="lazy" onload="this.classList.add('ld')" onerror="this.style.display='none'">`:''}
       <span class="gc-plat">${g.ps4?'PS4 · PS5':'PS5'}</span>
       ${deal?`<span class="gc-badge gc-sale">-${pct}%</span>`:''}${g.pre?'<span class="gc-badge gc-pre">ПРЕДЗАКАЗ</span>':''}
       <button class="gc-fav${Z.isFav('ps_'+id)?' on':''}" data-fk="ps_${id}" onclick="Z.toggleFav('ps_${id}',event)"><svg viewBox="0 0 24 24" fill="${Z.isFav('ps_'+id)?'#ff375f':'none'}" stroke="${Z.isFav('ps_'+id)?'#ff375f':'#fff'}" stroke-width="2.2"><path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78L12 21.23l8.84-8.84a5.5 5.5 0 000-7.78z"/></svg></button></div>
-    <h3>${esc(g.n)}</h3><div class="gc-foot"><b>${deal?`<span class="gc-old">${fmt(p2)}</span>`:''}<span class="gc-from">от </span>${fmt(dp||p2)}</b><span class="gc-buy">Выбрать →</span></div>
+    <h3>${esc(g.n)}</h3><div class="gc-foot"><b>${deal?`<span class="gc-old">${fmt(minP)}</span>`:''}<span class="gc-from">от </span>${fmt(dp||minP)}</b><span class="gc-buy">Выбрать →</span></div>
     ${tm?`<div class="gc-timer">⏱ ${tm}</div>`:''}</div>`};
 
 Z.stC=(id,g)=>`<div class="gc" onclick="Z.go('product',{t:'st',id:'${id}'})">
@@ -403,10 +403,11 @@ Z.rProd=p=>{if(!p)return;({ps:Z.rProdPS,st:Z.rProdST,xb:Z.rProdXB})[p.t]?.(p.id)
 
 Z.rProdPS=id=>{const el=$('s-product'),g=Z.ps?.[id];if(!g){el.innerHTML='<div class="empty"><b>🔍</b>Игра не найдена</div>';return}
   const d=Z.psD?.[id]||{},hero=d.hero||d.shots?.[0]||d.edimg?.['0']||'',eds=g.eds||[['Standard',g.uah]],isPre=!!g.pre;
-  Z.sel={plan:isPre?'p3':'p2',ed:0,cons:'PS5',reg:0,pid:id};
+  Z.sel={plan:isPre?'p3':'p2',ed:0,cons:'PS5',rk:'ua',reg:0,pid:id};
   const u0=eds[0][1],p2=Z.dgP(u0,.30),p3=Z.dgP(u0,.61);
   /* P1 options */
   const p1Opts=P1R.map(([rk,fl,rn])=>{const loc=d.reg?.[rk],p=loc!=null?Z.p1P(loc,rk):rk==='ua'?Z.dgP(u0,1.25):null;return p?{rk,fl,rn,p}:null}).filter(Boolean);
+  Z._p1Opts=p1Opts;
 
   el.innerHTML=`<div>${hero?`<img class="pd-hero" src="${hero}" loading="lazy">`:''}<div class="pad">
     <div class="pd-t">${esc(g.n)}</div>
@@ -426,19 +427,28 @@ Z.rProdPS=id=>{const el=$('s-product'),g=Z.ps?.[id];if(!g){el.innerHTML='<div cl
       ${p1Opts.length?`<div style="margin-top:6px"><div class="eyebrow">НА ВАШ АККАУНТ</div><div class="sec-t" style="font-size:.95rem">🔑 П1 — навсегда на ваш аккаунт</div>
         <div class="p1-list" id="p1l">${p1Opts.map((o,i)=>`<div class="p1-opt" onclick="Z._pP1(${i},this)"><span class="p1-fl">${o.fl}</span><span class="p1-n">${esc(o.rn)}</span><span class="p1-p">${fmt(o.p)}</span></div>`).join('')}</div></div>`:''}
 
+      ${g.ps4?`<div style="margin-top:10px"><div class="eyebrow">КОНСОЛЬ</div>
+        <div class="chips"><button class="chip on" onclick="Z.sel.cons='PS5';this.parentElement.querySelectorAll('.chip').forEach((e,i)=>e.classList.toggle('on',i===0));hap()">PS5</button><button class="chip" onclick="Z.sel.cons='PS4';this.parentElement.querySelectorAll('.chip').forEach((e,i)=>e.classList.toggle('on',i===1));hap()">PS4</button></div></div>`:''}
+
       <div class="trust"><span>⚡ Выдача 10–15 мин</span><span>🛡 Гарантия возврата</span><span>💬 Поддержка</span></div>
-      <button class="btn btn-primary" style="margin-top:14px" id="buyBtn" onclick="Z.buyPS()">Купить · ${fmt(Z._cp())}</button>
     </div></div>`;
   Z.showM('Купить — '+fmt(Z._cp()),()=>Z.buyPS())};
 
 Z._cp=()=>{const s=Z.sel,g=Z.ps?.[s.pid],d=Z.psD?.[s.pid]||{};if(!g)return 0;const eds=g.eds||[['Standard',g.uah]],uah=eds[s.ed]?.[1]||eds[0][1];
-  if(s.plan==='p1'){const rk=P1R[s.reg]?.[0]||'ua',loc=d.reg?.[rk];return loc!=null?Z.p1P(loc,rk):(rk==='ua'?Z.dgP(uah,1.25):Z.dgP(uah,1.25))}
+  if(s.plan==='p1'){const rk=s.rk||'ua',loc=d.reg?.[rk];return loc!=null?Z.p1P(loc,rk):Z.dgP(uah,1.25)}
   return Z.dgP(uah,DG[s.plan]?.k||.30)};
-Z._upd=()=>{const p=Z._cp();const b=$('buyBtn');if(b)b.textContent='Купить · '+fmt(p);Z.hideM();Z.showM('Купить — '+fmt(p),()=>Z.buyPS())};
+Z._upd=()=>{const p=Z._cp();Z.hideM();Z.showM('Купить — '+fmt(p),()=>Z.buyPS());
+  /* Update ZSMART prices on edition change */
+  const s=Z.sel,g=Z.ps?.[s.pid];if(!g)return;const eds=g.eds||[['Standard',g.uah]],uah=eds[s.ed]?.[1]||eds[0][1];
+  const p2=Z.dgP(uah,.30),p3=Z.dgP(uah,.61);
+  document.querySelectorAll('.zsmart .zcard strong').forEach((el,i)=>{el.textContent=fmt(i===0?p3:p2)});
+  /* Update P1 prices for selected edition */
+  const d=Z.psD?.[s.pid]||{};const p1l=$('p1l');if(p1l){const opts=P1R.map(([rk,fl,rn])=>{const loc=d.reg?.[rk],pr=loc!=null?Z.p1P(loc,rk):rk==='ua'?Z.dgP(uah,1.25):null;return pr?{rk,fl,rn,p:pr}:null}).filter(Boolean);Z._p1Opts=opts;
+    p1l.innerHTML=opts.map((o,i)=>`<div class="p1-opt${s.plan==='p1'&&s.rk===o.rk?' on':''}" onclick="Z._pP1(${i},this)"><span class="p1-fl">${o.fl}</span><span class="p1-n">${esc(o.rn)}</span><span class="p1-p">${fmt(o.p)}</span></div>`).join('')}};
 Z._pEd=(i,el)=>{Z.sel.ed=i;hap();el.parentElement.querySelectorAll('.zcard').forEach((e,j)=>e.classList.toggle('on',j===i));Z._upd()};
 Z._pPl=(k,el)=>{Z.sel.plan=k;hap();el.closest('.zsmart').querySelectorAll('.zcard').forEach(e=>e.classList.remove('on'));el.classList.add('on');
   document.querySelectorAll('#p1l .p1-opt').forEach(e=>e.classList.remove('on'));Z._upd()};
-Z._pP1=(ri,el)=>{Z.sel.plan='p1';Z.sel.reg=ri;hap();document.querySelectorAll('.zsmart .zcard').forEach(e=>e.classList.remove('on'));
+Z._pP1=(ri,el)=>{const opts=Z._p1Opts;Z.sel.plan='p1';Z.sel.rk=opts?.[ri]?.rk||'ua';Z.sel.reg=ri;hap();document.querySelectorAll('.zsmart .zcard').forEach(e=>e.classList.remove('on'));
   document.querySelectorAll('#p1l .p1-opt').forEach((e,j)=>e.classList.toggle('on',j===ri));Z._upd()};
 
 Z.rProdST=id=>{const el=$('s-product'),g=Z.steam?.[id];if(!g){el.innerHTML='<div class="empty"><b>🔍</b>Не найдено</div>';return}
@@ -473,8 +483,9 @@ Z.rFavs=()=>{const el=$('s-favs');if(!Z.favs.size){el.innerHTML='<div class="emp
   el.innerHTML=`<div class="hdr"><div class="hdr-t">Избранное</div><div class="hdr-cnt">${Z.favs.size}</div></div><div class="pad"><div class="ggrid">${c||'Загрузите каталоги'}</div></div>`};
 
 /* ═══ Actions ═══ */
-Z.buyPS=()=>{hap('medium');const s=Z.sel;let pc=s.plan;if(pc==='p1')pc='p1'+['u','t','i','p','s'][s.reg||0];
-  Z.openL(Z.zmn(s.pid,pc,s.ed,s.cons))};
+Z.buyPS=()=>{hap('medium');const s=Z.sel;let pc=s.plan;
+  if(pc==='p1'){const rkMap={ua:'u',tr:'t',in:'i',pl:'p',us:'s'};pc='p1'+(rkMap[s.rk]||'u')}
+  Z.openL(Z.zmn(s.pid,pc,s.ed,s.cons.toLowerCase()))};
 Z.openS=p=>Z.openL(CDN+p);
 Z.openL=u=>{tg?.openLink?tg.openLink(u):open(u,'_blank')};
 Z.openBot=s=>{if(tg){tg.openTelegramLink(`https://t.me/${BOT}?start=${s||'catalog'}`);tg.close()}else open(`https://t.me/${BOT}?start=${s||'catalog'}`)};
