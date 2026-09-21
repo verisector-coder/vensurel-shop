@@ -317,12 +317,13 @@ const SUBS=[
 const Z={scr:'home',hist:[],favs:new Set(),UAH_RUB:1.78,
   RATES:{USD:1,RUB:80,UAH:45,TRY:47.5,INR:95,PLN:3.74},
   ps:null,psD:null,psDeals:null,steam:null,shelves:null,xbox:null,reviews:null,si:null,
-  _mb:null,sel:{plan:'p2',ed:0,cons:'PS5',reg:0,pid:null},psTab:'games',_ppTier:'essential',_ppDur:1,_ppMode:'p3'};
+  _mb:null,sel:{plan:'p2',ed:0,cons:'PS5',reg:0,pid:null},psTab:'games',_ppTier:'essential',_ppDur:1,_ppMode:'p3',
+  cur:'RUB',CUR_RATES:{RUB:1,KZT:5.55,UZS:155,TJS:0.135},CUR_SYM:{RUB:'₽',KZT:'₸',UZS:'сўм',TJS:'сом.'}};
 
 /* ═══ Helpers ═══ */
 const $=id=>document.getElementById(id);
 const esc=s=>{const d=document.createElement('div');d.textContent=s;return d.innerHTML};
-const fmt=p=>p==null?'—':(Math.round(p).toLocaleString('ru-RU')+' ₽');
+const fmt=p=>{if(p==null)return'—';const r=Math.round(p*Z.CUR_RATES[Z.cur]);return r.toLocaleString('ru-RU')+' '+Z.CUR_SYM[Z.cur];};
 const hap=s=>{try{tg?.HapticFeedback?.impactOccurred(s||'light')}catch(e){}};
 const toast=m=>{const t=$('toast');t.textContent=m;t.classList.add('on');setTimeout(()=>t.classList.remove('on'),2000)};
 
@@ -453,6 +454,15 @@ Z.rHome=()=>{
     </div>
   </div>`;
 
+  let mixedH='';
+  if(Z.ps){
+    const psIds=Object.keys(Z.ps).slice(0,5);
+    const stIds=Z.steam?Object.keys(Z.steam).slice(0,5):[];
+    const mx=[...psIds.map(id=>({id,t:'ps'})),...stIds.map(id=>({id,t:'st'}))].sort(()=>Math.random()-.5);
+    mixedH=`<div class="pad"><div class="eyebrow">ПОПУЛЯРНОЕ</div><div class="sec-t">🔥 Хиты</div></div>
+      <div class="shelf">${mx.map(i=>i.t==='ps'?Z.psC(i.id,Z.ps[i.id]):Z.stC(i.id,Z.steam[i.id])).join('')}</div>`;
+  }
+
   $('s-home').innerHTML= promoH + `
     <div class="hero"><h1>ZAMON</h1><p>Игры, подписки и пополнения дешевле · выдача 10–60 мин</p>
       <div class="hero-stats"><div><b>${n}</b><span>PS игр</span></div><div><b>550+</b><span>Steam</span></div><div><b>16 000+</b><span>отзывов</span></div></div>
@@ -488,11 +498,19 @@ Z.rHome=()=>{
       </div>
     </div>
     ${stepsH}
+    ${mixedH}
     ${rvH}
-    ${dealsH}${hitsH}
+    ${dealsH}
     <div class="pad"><div class="eyebrow">СЕРВИСЫ</div><div class="sec-t">🤖 AI-подписки</div>
-      ${SUBS.slice(0,4).map(s=>`<div class="li" onclick="Z.openS('${s.u}')"><img class="li-ico" src="${CDN}${s.img}" loading="lazy" onerror="this.style.display='none'"><div class="li-info"><div class="li-n">${esc(s.n)}</div><div class="li-d">${esc(s.d)}</div></div><div class="li-p"><div class="li-from">от</div>${fmt(s.from)}</div></div>`).join('')}</div>
-    <div class="app-footer"><b>ZAMON · 7 лет на рынке</b><br>⚡ Выдача 10–15 мин · 🛡 Гарантия возврата<br>💳 Карта · СБП · USDT</div>`};
+      ${SUBS.map(s=>`<div class="li" onclick="Z.openS('${s.u}')"><img class="li-ico" src="${CDN}${s.img}" loading="lazy" onerror="this.style.display='none'"><div class="li-info"><div class="li-n">${esc(s.n)}</div><div class="li-d">${esc(s.d)}</div></div><div class="li-p"><div class="li-from">от</div>${fmt(s.from)}</div></div>`).join('')}
+      <button class="btn btn-soft" style="margin-top:12px" onclick="Z.go('subs')">Все подписки →</button>
+    </div>
+    <div class="app-footer"><b>ZAMON · 7 лет на рынке</b><br>⚡ Выдача 10–15 мин · 🛡 Гарантия возврата<br>💳 Карта · СБП · USDT
+      <div class="cur-toggle" style="margin-top:8px">
+        <span style="font-size:.72rem;color:var(--text-3);margin-right:6px">Валюта:</span>
+        ${['RUB','KZT','UZS','TJS'].map(c=>`<button class="chip${Z.cur===c?' on':''}" style="padding:4px 10px;font-size:.72rem" onclick="Z.cur='${c}';Z.rHome()">${Z.CUR_SYM[c]}</button>`).join('')}
+      </div>
+    </div>`};
 
 Z._ppPrices={
   essential:{1:799,3:1899,12:4199},
@@ -509,6 +527,20 @@ Z._ppRender=()=>{
   document.querySelectorAll('#ppModeCards .zcard').forEach((c,i)=>c.classList.toggle('on',['p3','p1'][i]===Z._ppMode));
 };
 Z._ppBuy=()=>{hap('medium');Z.openS('/games?tab=plus&tier='+Z._ppTier+'&dur='+Z._ppDur+'&mode='+Z._ppMode);};
+Z._psnAccounts=()=>{
+  const accs=[
+    {name:'Аккаунт PS5/PS4 — Турция 🇹🇷',desc:'Пустой турецкий аккаунт PSN',price:299},
+    {name:'Аккаунт PS5/PS4 — Украина 🇺🇦',desc:'Пустой украинский аккаунт PSN',price:299},
+    {name:'Аккаунт PS5/PS4 — США 🇺🇸',desc:'Пустой американский аккаунт PSN',price:399},
+  ];
+  return `<div class="pad"><div class="eyebrow">АККАУНТЫ</div><div class="sec-t">PSN Аккаунты</div>
+    <div class="sec-sub">Готовые аккаунты для покупки игр в нужном регионе</div>
+    ${accs.map(a=>`<div class="li" onclick="Z.openBot('accounts')">
+      <div class="li-info"><div class="li-n">${a.name}</div><div class="li-d">${a.desc}</div></div>
+      <div class="li-p">${fmt(a.price)}</div></div>`).join('')}
+    <div class="trust" style="margin-top:8px"><span>⚡ Моментальная выдача</span><span>🛡 Гарантия</span></div>
+  </div>`;
+};
 Z._psnCards=()=>{
   const cards=[
     {country:'🇹🇷 Турция',cur:'TL',items:[{nom:250,rub:650},{nom:500,rub:1200},{nom:1000,rub:2300},{nom:2000,rub:4500}]},
@@ -590,7 +622,7 @@ Z.rPS=()=>{const el=$('s-ps');if(!Z.ps||!Object.keys(Z.ps).length){el.innerHTML=
   if(Z.psTab==='cards'){
     el.innerHTML=tabsHtml+`
     <div class="hdr"><button class="hdr-back" onclick="Z.back()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg></button><div class="hdr-t">Пополнение PSN</div></div>
-    `+Z._psnCards();
+    `+Z._psnCards()+Z._psnAccounts();
     return;
   }
 
@@ -705,6 +737,8 @@ Z.rProdPS=id=>{const el=$('s-product'),g=Z.ps?.[id];if(!g){el.innerHTML='<div cl
   const deal=g.deal&&g.deal.end*1000>Date.now();
   const dealBanner = deal ? `<div class="deal-banner"><span class="deal-pct">-${Math.round((1-g.deal.disc/g.deal.full)*100)}%</span><div><b>Скидка в PS Store</b><small>Осталось ${Z.timer(g.deal.end)}</small></div></div>` : '';
 
+  const videoH = d.video ? `<div style="margin:8px 16px"><a href="${d.video}" target="_blank" style="display:flex;align-items:center;gap:8px;padding:12px;border:1px solid var(--border-2);border-radius:14px;background:var(--surface)"><span style="font-size:1.5rem">▶️</span><div><b style="font-size:.85rem">Смотреть трейлер</b><br><small style="font-size:.72rem;color:var(--text-2)">YouTube</small></div></a></div>` : '';
+
   const edDesc = {
     'Standard': 'Базовая версия игры',
     'Deluxe': 'Доп. контент и бонусы',
@@ -714,7 +748,7 @@ Z.rProdPS=id=>{const el=$('s-product'),g=Z.ps?.[id];if(!g){el.innerHTML='<div cl
     'Digital Deluxe': 'Цифровые бонусы'
   };
 
-  el.innerHTML=`<div>${hero?`<img class="pd-hero" src="${hero}" loading="lazy" onerror="this.style.display='none'">`:''}<div class="pad">
+  el.innerHTML=`<div>${hero?`<img class="pd-hero" src="${hero}" loading="lazy" onerror="this.style.display='none'">`:''}${videoH}<div class="pad">
     <div class="pd-t">${esc(g.n)}</div>
     <div class="pd-meta"><span>${g.ps4?'PS4 · PS5':'PS5'}</span>${d.mode?`<span>· ${d.mode}</span>`:''}</div>
     ${d.desc?`<div class="pd-desc">${esc(d.desc)}</div>`:''}</div>
@@ -797,7 +831,16 @@ Z._exS=q=>{const o=$('sR');if(!o)return;q=q.trim().toLowerCase();if(q.length<2){
     ${x.img?`<img class="li-ico" src="${x.img}" loading="lazy" onerror="this.style.display='none'">`:'<div class="li-ico"></div>'}<div class="li-info"><div class="li-n">${esc(x.n)}</div><div class="li-d" style="color:var(--accent);font-weight:600;font-size:.7rem;margin-top:2px">${x.pl}</div></div><div class="li-p">${fmt(x.p)}</div></div>`).join('')};
 
 /* ═══ Favs ═══ */
-Z.rFavs=()=>{const el=$('s-favs');if(!Z.favs.size){el.innerHTML='<div class="empty" style="padding-top:80px"><b>❤️</b><p style="margin-top:6px">Нажмите ♡ на карточке игры</p></div>';return}
+Z.rFavs=()=>{const el=$('s-favs');if(!Z.favs.size){el.innerHTML=`<div class="empty" style="padding:60px 20px">
+  <div style="font-size:3rem;margin-bottom:8px">❤️</div>
+  <b style="font-size:1rem">Пока пусто</b>
+  <p style="color:var(--text-2);margin-top:6px;font-size:.85rem">
+    Нажмите ❤️ на любой игре,<br>чтобы добавить в избранное
+  </p>
+  <button class="btn btn-primary" style="margin-top:16px;max-width:200px;margin-left:auto;margin-right:auto" onclick="Z.go('ps')">
+    Открыть каталог
+  </button>
+</div>`;return}
   let c='';for(const k of Z.favs){const[t,id]=k.split('_');if(t==='ps'&&Z.ps?.[id])c+=Z.psC(id,Z.ps[id]);else if(t==='st'&&Z.steam?.[id])c+=Z.stC(id,Z.steam[id])}
   el.innerHTML=`<div class="hdr"><button class="hdr-back" onclick="Z.back()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg></button><div class="hdr-t">Избранное</div><div class="hdr-cnt">${Z.favs.size}</div></div><div class="pad"><div class="ggrid">${c||'Загрузите каталоги'}</div></div>`};
 
