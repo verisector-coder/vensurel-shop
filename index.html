@@ -250,6 +250,16 @@ html[data-theme="dark"] .chip.on{background:var(--accent);border-color:var(--acc
 /* Footer */
 .app-footer{padding:24px 16px 20px;text-align:center;color:var(--text-3);font-size:.75rem;line-height:1.6}
 .app-footer b{color:var(--text-2);font-weight:700}
+
+/* Filters & Promo */
+.sort-select{padding:6px 10px;border-radius:10px;font-size:.82rem;font-weight:600;border:1px solid var(--border-2);background:var(--surface);color:var(--text);appearance:auto}
+.deal-banner{display:flex;align-items:center;gap:12px;padding:12px 16px;margin:0 16px 8px;border-radius:14px;background:linear-gradient(135deg,#e11d48,#be123c);color:#fff}
+.deal-pct{font-size:1.4rem;font-weight:900}
+.deal-banner b{display:block;font-size:.88rem}
+.deal-banner small{font-size:.75rem;opacity:.8}
+.promo-strip{padding:10px 16px;text-align:center;font-size:.82rem;font-weight:700;cursor:pointer;
+  background:linear-gradient(90deg,#e11d48,#dc2626);color:#fff;border-radius:0 0 14px 14px}
+.promo-strip:active{opacity:.9}
 </style>
 </head>
 <body>
@@ -359,7 +369,7 @@ Z.timer=end=>{const ms=end*1000-Date.now();if(ms<=0)return'';const h=Math.floor(
 Z.psC=(id,g)=>{const isPre=!!g.pre,minK=isPre?.61:.30,minP=Z.dgP(g.uah,minK),deal=g.deal&&g.deal.end*1000>Date.now(),dp=deal?Z.dgP(g.deal.disc,minK):null,
   pct=deal?Math.round((1-g.deal.disc/g.deal.full)*100):0,img=Z.psD?.[id]?.edimg?.['0']||Z.psD?.[id]?.hero||Z.psD?.[id]?.shots?.[0]||'',tm=deal?Z.timer(g.deal.end):'';
   return`<div class="gc" onclick="Z.go('product',{t:'ps',id:'${id}'})">
-    <div class="gc-media">${img?`<img src="${img}" loading="lazy" onerror="this.style.display='none'" onload="this.classList.add('ld')" onerror="this.style.display='none'" onerror="this.style.display='none'">`:''}
+    <div class="gc-media">${img?`<img src="${img}" loading="lazy" onload="this.classList.add('ld')" onerror="this.style.display='none'">`:''}
       <span class="gc-plat">${g.ps4?'PS4 · PS5':'PS5'}</span>
       ${deal?`<span class="gc-badge gc-sale">-${pct}%</span>`:''}${g.pre?'<span class="gc-badge gc-pre">ПРЕДЗАКАЗ</span>':''}
       <button class="gc-fav${Z.isFav('ps_'+id)?' on':''}" data-fk="ps_${id}" onclick="Z.toggleFav('ps_${id}',event)"><svg viewBox="0 0 24 24" fill="${Z.isFav('ps_'+id)?'#ff375f':'none'}" stroke="${Z.isFav('ps_'+id)?'#ff375f':'#fff'}" stroke-width="2.2"><path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78L12 21.23l8.84-8.84a5.5 5.5 0 000-7.78z"/></svg></button></div>
@@ -367,7 +377,7 @@ Z.psC=(id,g)=>{const isPre=!!g.pre,minK=isPre?.61:.30,minP=Z.dgP(g.uah,minK),dea
     ${tm?`<div class="gc-timer">⏱ ${tm}</div>`:''}</div>`};
 
 Z.stC=(id,g)=>`<div class="gc" onclick="Z.go('product',{t:'st',id:'${id}'})">
-  <div class="gc-media"><img src="${g.cap||g.header}" loading="lazy" onerror="this.style.display='none'" onload="this.classList.add('ld')" onerror="this.style.display='none'">
+  <div class="gc-media"><img src="${g.cap||g.header}" loading="lazy" onload="this.classList.add('ld')" onerror="this.style.display='none'">
     ${g.steam_disc>0?`<span class="gc-badge gc-sale">-${g.steam_disc}%</span>`:''}<span class="gc-plat">STEAM</span>
     <button class="gc-fav${Z.isFav('st_'+id)?' on':''}" data-fk="st_${id}" onclick="Z.toggleFav('st_${id}',event)"><svg viewBox="0 0 24 24" fill="${Z.isFav('st_'+id)?'#ff375f':'none'}" stroke="${Z.isFav('st_'+id)?'#ff375f':'#fff'}" stroke-width="2.2"><path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78L12 21.23l8.84-8.84a5.5 5.5 0 000-7.78z"/></svg></button></div>
   <h3>${esc(g.name)}</h3><div class="gc-foot"><b>${fmt(g.price)}</b><span class="gc-buy">Выбрать →</span></div></div>`;
@@ -375,12 +385,15 @@ Z.stC=(id,g)=>`<div class="gc" onclick="Z.go('product',{t:'st',id:'${id}'})">
 /* ═══ Screens ═══ */
 Z.rHome=()=>{
   const n=Z.ps?Object.keys(Z.ps).length:'…';
-  let dealsH='',hitsH='';
+  let dealsH='',hitsH='',maxD=0;
   if(Z.ps){const ids=Object.keys(Z.ps),now=Date.now();
-    const dIds=ids.filter(id=>{const g=Z.ps[id];return g.deal&&g.deal.end*1000>now}).slice(0,10);
+    const dIds=ids.filter(id=>{const g=Z.ps[id];if(g.deal&&g.deal.end*1000>now){
+      const pct=Math.round((1-g.deal.disc/g.deal.full)*100);if(pct>maxD)maxD=pct;return true}return false}).slice(0,10);
     if(dIds.length)dealsH=`<div class="pad"><div class="eyebrow">СКИДКИ</div><div class="sec-t">🔥 Скидки PS Store</div></div><div class="shelf">${dIds.map(id=>Z.psC(id,Z.ps[id])).join('')}</div>`;
     hitsH=`<div class="pad"><div class="eyebrow">ПОПУЛЯРНОЕ</div><div class="sec-t">🏆 Хиты PlayStation</div></div><div class="shelf">${ids.slice(0,12).map(id=>Z.psC(id,Z.ps[id])).join('')}</div>`}
   
+  const promoStrip = maxD > 0 ? `<div class="promo-strip" onclick="Z.go('ps');setTimeout(()=>{Z.psFilt='deals';Z.rPS()},100)">🔥 Скидки PS Store до -${maxD}% · Успей купить →</div>` : '';
+
   const psCovers = Z.psD ? Object.keys(Z.psD).slice(0,4).map(id => Z.psD[id]?.edimg?.['0'] || Z.psD[id]?.hero || '').filter(Boolean) : [];
   const stCovers = Z.steam ? Object.keys(Z.steam).slice(0,4).map(id => Z.steam[id]?.cap || Z.steam[id]?.header || '').filter(Boolean) : [];
   const xbCovers = Z.xbox?.games ? Z.xbox.games.slice(0,4).map(g => g?.cover || g?.hero || '').filter(Boolean) : [];
@@ -396,7 +409,7 @@ Z.rHome=()=>{
       <div class="rev-cta"><button class="btn btn-soft" onclick="Z.go('reviews')">Все отзывы →</button></div>
     </div>` : '';
 
-  $('s-home').innerHTML=`
+  $('s-home').innerHTML= promoStrip + `
     <div class="hero"><h1>ZAMON</h1><p>Игры, подписки и пополнения дешевле · выдача 10–60 мин</p>
       <div class="hero-stats"><div><b>${n}</b><span>PS игр</span></div><div><b>550+</b><span>Steam</span></div><div><b>16 000+</b><span>отзывов</span></div></div>
       <div class="hero-tags"><span class="hero-tag">⚡ 10–60 мин</span><span class="hero-tag">🛡 Гарантия</span><span class="hero-tag">💳 СБП · USDT</span></div></div>
@@ -433,19 +446,47 @@ Z.rHome=()=>{
     ${rvH}
     ${dealsH}${hitsH}
     <div class="pad"><div class="eyebrow">СЕРВИСЫ</div><div class="sec-t">🤖 AI-подписки</div>
-      ${SUBS.slice(0,4).map(s=>`<div class="li" onclick="Z.openS('${s.u}')"><img class="li-ico" onerror="this.style.display='none'" src="${CDN}${s.img}" loading="lazy" onerror="this.style.display='none'" onerror="this.style.display='none'"><div class="li-info"><div class="li-n">${esc(s.n)}</div><div class="li-d">${esc(s.d)}</div></div><div class="li-p"><div class="li-from">от</div>${fmt(s.from)}</div></div>`).join('')}</div>
+      ${SUBS.slice(0,4).map(s=>`<div class="li" onclick="Z.openS('${s.u}')"><img class="li-ico" src="${CDN}${s.img}" loading="lazy" onerror="this.style.display='none'"><div class="li-info"><div class="li-n">${esc(s.n)}</div><div class="li-d">${esc(s.d)}</div></div><div class="li-p"><div class="li-from">от</div>${fmt(s.from)}</div></div>`).join('')}</div>
     <div class="app-footer"><b>ZAMON · 7 лет на рынке</b><br>⚡ Выдача 10–15 мин · 🛡 Гарантия возврата<br>💳 Карта · СБП · USDT</div>`};
 
 Z.psFilt='all';Z.psSort='def';
 Z.rPS=()=>{const el=$('s-ps');if(!Z.ps||!Object.keys(Z.ps).length){el.innerHTML='<div class="loading"><div class="spin"></div>Загружаем каталог…</div>';Z.loadPS().then(()=>Z.rPS());return}
-  let g=Object.entries(Z.ps);const f=Z.psFilt,now=Date.now();
-  if(f==='deals')g=g.filter(([,x])=>x.deal&&x.deal.end*1000>now);else if(f==='ps4')g=g.filter(([,x])=>x.ps4);else if(f==='pre')g=g.filter(([,x])=>x.pre);
+  const now=Date.now();
+  let g=Object.entries(Z.ps);
+  
+  let shelvesH='';
+  if(Z.psFilt==='all') {
+    const deals = g.filter(([,x])=>x.deal&&x.deal.end*1000>now).slice(0,10);
+    const newG = g.filter(([id])=>Z.psD?.[id]?.new).slice(0,10);
+    const fallbackNew = newG.length?newG:g.slice(0,10);
+    const cheap = g.filter(([,x])=>Z.dgP(x.uah,.30)<=1000).slice(0,10);
+    const coop = g.filter(([id])=>{const m=(Z.psD?.[id]?.mode||'').toLowerCase();return m.includes('2')||m.includes('coop')||m.includes('local')||m.includes('мультиплеер')}).slice(0,10);
+    
+    if(deals.length) shelvesH+=`<div class="pad"><div class="eyebrow">АКЦИИ</div><div class="sec-t">🔥 Скидки PS Store</div></div><div class="shelf">${deals.map(([id,x])=>Z.psC(id,x)).join('')}</div>`;
+    if(fallbackNew.length) shelvesH+=`<div class="pad"><div class="eyebrow">СВЕЖЕЕ</div><div class="sec-t">🆕 Новинки</div></div><div class="shelf">${fallbackNew.map(([id,x])=>Z.psC(id,x)).join('')}</div>`;
+    if(cheap.length) shelvesH+=`<div class="pad"><div class="eyebrow">БЮДЖЕТНО</div><div class="sec-t">💰 До 1 000 ₽ (П2)</div></div><div class="shelf">${cheap.map(([id,x])=>Z.psC(id,x)).join('')}</div>`;
+    if(coop.length) shelvesH+=`<div class="pad"><div class="eyebrow">ВМЕСТЕ</div><div class="sec-t">👫 Для двоих</div></div><div class="shelf">${coop.map(([id,x])=>Z.psC(id,x)).join('')}</div>`;
+  }
+  
+  const f=Z.psFilt;
+  if(f==='deals')g=g.filter(([,x])=>x.deal&&x.deal.end*1000>now);
+  else if(f==='ps4')g=g.filter(([,x])=>x.ps4);
+  else if(f==='pre')g=g.filter(([,x])=>x.pre);
+  else if(f==='new')g=g.filter(([id])=>Z.psD?.[id]?.new).length ? g.filter(([id])=>Z.psD?.[id]?.new) : g.slice(0,50);
+  else if(f==='cheap')g=g.filter(([,x])=>Z.dgP(x.uah,.30)<=1000);
+  else if(f==='coop')g=g.filter(([id])=>{const m=(Z.psD?.[id]?.mode||'').toLowerCase();return m.includes('2')||m.includes('coop')||m.includes('local')||m.includes('мультиплеер')});
+
   if(Z.psSort==='cheap')g.sort((a,b)=>a[1].uah-b[1].uah);else if(Z.psSort==='exp')g.sort((a,b)=>b[1].uah-a[1].uah);
+
   el.innerHTML=`<div class="hdr"><button class="hdr-back" onclick="Z.back()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg></button><div class="hdr-t">PlayStation</div><div class="hdr-cnt">${g.length} игр</div>
-    <button onclick="Z._psSrt()" style="padding:6px"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M6 12h12M9 18h6"/></svg></button></div>
-    <div class="chips">${['all:Все','deals:🔥 Скидки','pre:Предзаказы','ps4:PS4'].map(x=>{const[k,l]=x.split(':');return`<button class="chip${f===k?' on':''}" onclick="Z.psFilt='${k}';Z.rPS()">${l}</button>`}).join('')}</div>
-    <div class="pad" style="padding-top:0"><div class="ggrid">${g.map(([id,x])=>Z.psC(id,x)).join('')}</div></div>`};
-Z._psSrt=()=>{Z.psSort=Z.psSort==='def'?'cheap':Z.psSort==='cheap'?'exp':'def';toast(Z.psSort==='cheap'?'Сначала дешёвые':Z.psSort==='exp'?'Сначала дорогие':'По умолчанию');Z.rPS();hap()};
+    <select class="sort-select" onchange="Z.psSort=this.value;Z.rPS()">
+      <option value="def" ${Z.psSort==='def'?'selected':''}>По умолчанию</option>
+      <option value="cheap" ${Z.psSort==='cheap'?'selected':''}>Сначала дешёвые</option>
+      <option value="exp" ${Z.psSort==='exp'?'selected':''}>Сначала дорогие</option>
+    </select></div>
+    <div class="chips">${['all:Все','deals:🔥 Скидки','pre:Предзаказы','ps4:PS4','new:🆕 Новинки','cheap:💰 До 1000₽','coop:👫 Для двоих'].map(x=>{const[k,l]=x.split(':');return`<button class="chip${f===k?' on':''}" onclick="Z.psFilt='${k}';Z.rPS()">${l}</button>`}).join('')}</div>
+    ${shelvesH}
+    <div class="pad" style="padding-top:0">${Z.psFilt==='all'?'<div class="sec-t">Все игры</div>':''}<div class="ggrid">${g.map(([id,x])=>Z.psC(id,x)).join('')}</div></div>`};
 
 Z.rSteam=async()=>{const el=$('s-steam');if(!Z.steam){el.innerHTML='<div class="loading"><div class="spin"></div>Загружаем Steam…</div>';await Z.loadSteam()}
   if(!Z.steam||!Object.keys(Z.steam).length){el.innerHTML='<div class="empty"><b>😔</b>Не удалось загрузить</div>';return}
@@ -460,7 +501,7 @@ Z.rXbox=async()=>{const el=$('s-xbox');if(!Z.xbox){el.innerHTML='<div class="loa
   const gs=Z.xbox.games.filter(g=>!g.dlc);
   el.innerHTML=`<div class="hdr"><button class="hdr-back" onclick="Z.back()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg></button><div class="hdr-t">Xbox</div><div class="hdr-cnt">${gs.length} игр</div></div>
     <div class="pad"><div class="ggrid">${gs.map(g=>{const p=Math.min(...g.vars.map(v=>v.price)),img=g.cover||g.hero||'';
-      return`<div class="gc" onclick="Z.go('product',{t:'xb',id:'${g.id}'})"><div class="gc-media">${img?`<img src="${img}" loading="lazy" onerror="this.style.display='none'" onload="this.classList.add('ld')" onerror="this.style.display='none'">`:''}
+      return`<div class="gc" onclick="Z.go('product',{t:'xb',id:'${g.id}'})"><div class="gc-media">${img?`<img src="${img}" loading="lazy" onload="this.classList.add('ld')" onerror="this.style.display='none'">`:''}
         <span class="gc-plat">XBOX</span></div><h3>${esc(g.n)}</h3><div class="gc-foot"><b><span class="gc-from">от </span>${fmt(p)}</b><span class="gc-buy">Выбрать →</span></div></div>`}).join('')}</div></div>`};
 
 Z.rSubs=()=>{$('s-subs').innerHTML=`<div class="hdr"><button class="hdr-back" onclick="Z.back()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg></button><div class="hdr-t">AI-подписки</div></div>
@@ -495,13 +536,29 @@ Z.rProdPS=id=>{const el=$('s-product'),g=Z.ps?.[id];if(!g){el.innerHTML='<div cl
   const p1Opts=P1R.map(([rk,fl,rn])=>{const loc=d.reg?.[rk],p=loc!=null?Z.p1P(loc,rk):rk==='ua'?Z.dgP(u0,1.25):null;return p?{rk,fl,rn,p}:null}).filter(Boolean);
   Z._p1Opts=p1Opts;
 
-  el.innerHTML=`<div>${hero?`<img class="pd-hero" onerror="this.style.display='none'" src="${hero}" loading="lazy" onerror="this.style.display='none'">`:''}<div class="pad">
+  const deal=g.deal&&g.deal.end*1000>Date.now();
+  const dealBanner = deal ? `<div class="deal-banner"><span class="deal-pct">-${Math.round((1-g.deal.disc/g.deal.full)*100)}%</span><div><b>Скидка в PS Store</b><small>Осталось ${Z.timer(g.deal.end)}</small></div></div>` : '';
+
+  const edDesc = {
+    'Standard': 'Базовая версия игры',
+    'Deluxe': 'Доп. контент и бонусы',
+    'Ultimate': 'Все DLC и сезонный пропуск',
+    'Premium': 'Максимальное издание',
+    'Gold': 'Игра + сезонный пропуск',
+    'Digital Deluxe': 'Цифровые бонусы'
+  };
+
+  el.innerHTML=`<div>${hero?`<img class="pd-hero" src="${hero}" loading="lazy" onerror="this.style.display='none'">`:''}<div class="pad">
     <div class="pd-t">${esc(g.n)}</div>
-    <div class="pd-meta"><span>${g.ps4?'PS4 · PS5':'PS5'}</span>${d.mode?`<span>· ${d.mode}</span>`:''}${g.deal?`<span style="color:#e11d48;font-weight:800">-${Math.round((1-g.deal.disc/g.deal.full)*100)}%</span>`:''}</div>
+    <div class="pd-meta"><span>${g.ps4?'PS4 · PS5':'PS5'}</span>${d.mode?`<span>· ${d.mode}</span>`:''}</div>
     ${d.desc?`<div class="pd-desc">${esc(d.desc)}</div>`:''}</div>
+    ${dealBanner}
     ${(d.shots||[]).length?`<div class="shots">${d.shots.slice(0,6).map(s=>`<img src="${s}" loading="lazy" onerror="this.style.display='none'">`).join('')}</div>`:''}
     <div class="pad">
-      ${eds.length>1?`<div class="eyebrow">ИЗДАНИЕ</div>${eds.map((e,i)=>`<div class="zcard${i===0?' on':''}" onclick="Z._pEd(${i},this)"><div style="flex:1"><b>${esc(e[0])}</b></div><strong>${fmt(Z.dgP(e[1],.30))}</strong></div>`).join('')}<div style="height:10px"></div>`:''}
+      ${eds.length>1?`<div class="eyebrow">ИЗДАНИЕ</div>${eds.map((e,i)=>{
+        const desc = d.edinfo?.[e[0]] || edDesc[e[0]] || 'Специальное издание';
+        return `<div class="zcard${i===0?' on':''}" onclick="Z._pEd(${i},this)"><div style="flex:1"><b>${esc(e[0])}</b><small>${esc(desc)}</small></div><strong>${fmt(Z.dgP(e[1],.30))}</strong></div>`
+      }).join('')}<div style="height:10px"></div>`:''}
 
       <div class="zsmart"><div class="zsmart-h"><small>ZAMON SMART BUY</small><b>Как вам удобнее получить игру?</b></div>
         <div class="zcard${Z.sel.plan==='p3'?' on':''}" onclick="Z._pPl('p3',this)">${!isPre?'<em>Рекомендуем</em>':''}
@@ -561,7 +618,7 @@ Z._exS=q=>{const o=$('sR');if(!o)return;q=q.trim().toLowerCase();if(q.length<2){
   for(const s of SUBS)if(s.n.toLowerCase().includes(q))r.push({t:'sub',n:s.n,p:s.from,img:CDN+s.img,pl:'AI',u:s.u});
   if(!r.length){o.innerHTML='<div class="empty"><b>😔</b>Ничего не найдено</div>';return}
   o.innerHTML=r.slice(0,25).map(x=>`<div class="li" onclick="${x.t==='sub'?`Z.openS('${x.u}')`:`Z.go('product',{t:'${x.t}',id:'${x.id}'})`}">
-    ${x.img?`<img class="li-ico" onerror="this.style.display='none'" src="${x.img}" loading="lazy" onerror="this.style.display='none'">`:'<div class="li-ico"></div>'}<div class="li-info"><div class="li-n">${esc(x.n)}</div><div class="li-d">${x.pl}</div></div><div class="li-p">${fmt(x.p)}</div></div>`).join('')};
+    ${x.img?`<img class="li-ico" src="${x.img}" loading="lazy" onerror="this.style.display='none'">`:'<div class="li-ico"></div>'}<div class="li-info"><div class="li-n">${esc(x.n)}</div><div class="li-d">${x.pl}</div></div><div class="li-p">${fmt(x.p)}</div></div>`).join('')};
 
 /* ═══ Favs ═══ */
 Z.rFavs=()=>{const el=$('s-favs');if(!Z.favs.size){el.innerHTML='<div class="empty" style="padding-top:80px"><b>❤️</b><p style="margin-top:6px">Нажмите ♡ на карточке игры</p></div>';return}
