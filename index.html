@@ -126,7 +126,8 @@ html[data-theme="dark"] .chip.on{background:var(--accent);border-color:var(--acc
 /* ── List item ── */
 .li{display:flex;align-items:center;gap:12px;padding:10px 16px;border-bottom:1px solid var(--border-2);transition:.12s}
 .li:active{background:color-mix(in srgb,var(--text) 4%,transparent)}
-.li-ico{width:42px;height:42px;border-radius:12px;flex-shrink:0;object-fit:cover;background:var(--bg-alt)}
+.li-ico{width:42px;height:42px;border-radius:12px;flex-shrink:0;object-fit:cover;background:var(--bg-alt);opacity:0;transition:opacity .4s ease}
+.li-ico.ld{opacity:1}
 .li-info{flex:1;min-width:0}
 .li-n{font-size:.88rem;font-weight:600}
 .li-d{font-size:.75rem;color:var(--text-3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -143,12 +144,14 @@ html[data-theme="dark"] .chip.on{background:var(--accent);border-color:var(--acc
   border:1px solid color-mix(in srgb,var(--accent) 20%,transparent)}
 
 /* ── Product detail ── */
-.pd-hero{width:100%;aspect-ratio:16/9;object-fit:cover;border-radius:0 0 16px 16px;background:var(--bg-alt)}
+.pd-hero{width:100%;aspect-ratio:16/9;object-fit:cover;border-radius:0 0 16px 16px;background:var(--bg-alt);opacity:0;transition:opacity .4s ease}
+.pd-hero.ld{opacity:1}
 .pd-t{font-size:1.3rem;font-weight:800;letter-spacing:-.025em;line-height:1.15;margin-bottom:4px}
 .pd-meta{font-size:.78rem;color:var(--text-2);display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-bottom:10px}
 .pd-desc{font-size:.82rem;color:var(--text-2);line-height:1.45;margin-bottom:14px}
 .shots{display:flex;gap:8px;overflow-x:auto;padding:0 16px 10px;-webkit-overflow-scrolling:touch}
-.shots img{height:140px;border-radius:10px;flex-shrink:0}
+.shots img{height:140px;border-radius:10px;flex-shrink:0;opacity:0;transition:opacity .4s ease}
+.shots img.ld{opacity:1}
 
 /* ── ZSMART buy cards (= site zsmart) ── */
 .zsmart{margin:10px 0;padding:14px;border:1px solid color-mix(in srgb,var(--accent) 24%,var(--border));
@@ -200,8 +203,8 @@ html[data-theme="dark"] .chip.on{background:var(--accent);border-color:var(--acc
 .sinput::placeholder{color:var(--text-3)}
 
 /* ── Header ── */
-.hdr{display:flex;align-items:center;gap:8px;padding:10px 16px;position:sticky;top:0;z-index:50;
-  background:var(--nav-bg);backdrop-filter:saturate(180%) blur(20px);-webkit-backdrop-filter:saturate(180%) blur(20px);
+.hdr{display:flex;align-items:center;gap:8px;padding:10px 16px;position:sticky;top:0;z-index:100;
+  background:color-mix(in srgb,var(--bg) 92%,transparent);backdrop-filter:saturate(180%) blur(20px);-webkit-backdrop-filter:saturate(180%) blur(20px);
   border-bottom:1px solid var(--border-2)}
 .hdr-t{font-size:1.05rem;font-weight:700;flex:1;letter-spacing:-.02em}
 .hdr-cnt{font-size:.78rem;color:var(--text-3)}
@@ -231,6 +234,9 @@ html[data-theme="dark"] .chip.on{background:var(--accent);border-color:var(--acc
 .faq-item summary::after{content:'＋';font-size:1rem;color:var(--text-3);transition:transform .2s}
 .faq-item[open] summary::after{content:'－'}
 .faq-item p{padding:0 14px 12px;font-size:.82rem;color:var(--text-2);line-height:1.45}
+mark{background:color-mix(in srgb,var(--accent) 20%,transparent);color:var(--text);border-radius:2px;padding:0 1px}
+.dock-dot{position:absolute;top:6px;right:50%;transform:translateX(12px);width:6px;height:6px;border-radius:50%;background:#e11d48;display:none}
+.dock-dot.on{display:block}
 
 /* ── ZAMON Updates ── */
 .hdr-back{padding:6px;display:flex;align-items:center;cursor:pointer;background:none;border:none}
@@ -286,7 +292,8 @@ html[data-theme="dark"] .chip.on{background:var(--accent);border-color:var(--acc
 .step b{font-size:.88rem;font-weight:700;display:block}
 .step small{font-size:.75rem;color:var(--text-2)}
 /* Tabs */
-.tabs{display:flex;border-bottom:2px solid var(--border-2);margin-bottom:0}
+.tabs{display:flex;border-bottom:2px solid var(--border-2);margin-bottom:0;position:sticky;top:44px;z-index:99;
+  background:color-mix(in srgb,var(--bg) 92%,transparent);backdrop-filter:saturate(180%) blur(12px);-webkit-backdrop-filter:saturate(180%) blur(12px)}
 .tab{flex:1;padding:12px 8px;text-align:center;font-size:.85rem;font-weight:600;color:var(--text-3);border-bottom:2px solid transparent;margin-bottom:-2px;cursor:pointer;transition:.2s}
 .tab.on{color:var(--accent);border-bottom-color:var(--accent)}
 </style>
@@ -308,7 +315,7 @@ html[data-theme="dark"] .chip.on{background:var(--accent);border-color:var(--acc
   <button class="on" onclick="Z.tab('home')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 9.5L12 3l9 6.5V20a1 1 0 01-1 1H4a1 1 0 01-1-1V9.5z"/><path d="M9 21V12h6v9"/></svg>Главная</button>
   <button onclick="Z.tab('ps')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>Каталог</button>
   <button onclick="Z.tab('search')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.35-4.35"/></svg>Поиск</button>
-  <button onclick="Z.tab('favs')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78L12 21.23l8.84-8.84a5.5 5.5 0 000-7.78z"/></svg>Избранное</button>
+  <button onclick="Z.tab('favs')" style="position:relative"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78L12 21.23l8.84-8.84a5.5 5.5 0 000-7.78z"/></svg>Избранное<span id="favDot" class="dock-dot"></span></button>
   <button onclick="Z.tab('support')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>Поддержка</button>
 </nav>
 <div id="toast" class="toast"></div>
@@ -356,6 +363,10 @@ const toast=(m,type='')=>{
 Z.dgP=(uah,k)=>Math.max(300,Math.round(uah*Z.UAH_RUB*k/10)*10);
 Z.p1P=(loc,rk,m)=>{const rc=RC[rk];if(!loc||!rc||!Z.RATES[rc])return null;const r=rc==='INR'?INR_B:Z.RATES[rc];return Math.max(300,Math.round(loc/r*1.25*(m||1)*Z.RATES.RUB/10)*10)};
 Z.zmn=(id,pl,ei,c)=>'https://pay.zamon.app/zpay?c=zmn_'+id+'_'+pl+'_'+(ei||0)+'_'+(c==='PS4'?'ps4':'ps5');
+Z._recent=JSON.parse(localStorage.getItem('zrecent')||'[]');
+Z._addRecent=(t,id)=>{Z._recent=Z._recent.filter(x=>!(x.t===t&&x.id===id));Z._recent.unshift({t,id});
+  if(Z._recent.length>10)Z._recent=Z._recent.slice(0,10);localStorage.setItem('zrecent',JSON.stringify(Z._recent))};
+Z._share=(name)=>{const url=location.href;if(navigator.share){navigator.share({title:name+' — ZAMON',url}).catch(()=>{});}else{navigator.clipboard?.writeText(name+' — ZAMON\n'+url);toast('Ссылка скопирована','ok');}};
 
 /* ═══ Init ═══ */
 Z.init=()=>{
@@ -364,8 +375,9 @@ Z.init=()=>{
     tg.onEvent('themeChanged',()=>{document.documentElement.dataset.theme=tg.colorScheme==='dark'?'dark':'light'});
     try{tg.setHeaderColor(dk?'#000000':'#fbfbfd');tg.setBackgroundColor(dk?'#000000':'#fbfbfd');tg.setBottomBarColor?.(dk?'#161617':'#ffffff')}catch(e){}
     tg.BackButton.onClick(()=>Z.back());
-    tg.CloudStorage?.getItem('zfav',(e,v)=>{if(v)try{Z.favs=new Set(JSON.parse(v))}catch(x){}});
+    tg.CloudStorage?.getItem('zfav',(e,v)=>{if(v)try{Z.favs=new Set(JSON.parse(v));if(Z.favs.size)$('favDot').classList.add('on')}catch(x){}});
   }else{document.documentElement.dataset.theme=matchMedia('(prefers-color-scheme:dark)').matches?'dark':'light'}
+  if(Z.favs.size)$('favDot').classList.add('on');
   Z.show('home');Z.loadRates();Z.loadPS();Z.loadSI();
   Z.loadRev().then(()=>{if(Z.scr==='home')Z.rHome()});
   Z.loadSteam().then(()=>{if(Z.scr==='home')Z.rHome()});
@@ -400,6 +412,7 @@ Z.hideM=()=>{if(!tg?.MainButton)return;tg.MainButton.hide();if(Z._mb){tg.MainBut
 Z.isFav=k=>Z.favs.has(k);
 Z.toggleFav=(k,ev)=>{ev?.stopPropagation();ev?.preventDefault();const h=Z.favs.has(k);h?Z.favs.delete(k):Z.favs.add(k);
   hap('medium');toast(h?'Убрано':'❤️ В избранном',h?'':'ok');document.querySelectorAll(`[data-fk="${k}"]`).forEach(b=>{b.classList.toggle('on',!h);const sv=b.querySelector('svg');if(sv){sv.setAttribute('fill',!h?'#ff375f':'none');sv.setAttribute('stroke',!h?'#ff375f':'#fff')}});
+  $('favDot').classList.toggle('on',Z.favs.size>0);
   const j=JSON.stringify([...Z.favs]);tg?.CloudStorage?tg.CloudStorage.setItem('zfav',j):localStorage.setItem('zfav',j)};
 
 /* ═══ Card builders ═══ */
@@ -508,6 +521,16 @@ Z.rHome=()=>{
       <div class="shelf">${mx.map(i=>i.t==='ps'?Z.psC(i.id,Z.ps[i.id]):Z.stC(i.id,Z.steam[i.id])).join('')}</div>`;
   }
 
+  let recentH='';
+  if(Z._recent.length && Z.ps){
+    const cards=Z._recent.slice(0,6).map(r=>{
+      if(r.t==='ps'&&Z.ps[r.id])return Z.psC(r.id,Z.ps[r.id]);
+      if(r.t==='st'&&Z.steam?.[r.id])return Z.stC(r.id,Z.steam[r.id]);
+      return '';
+    }).filter(Boolean);
+    if(cards.length) recentH=`<div class="pad"><div class="eyebrow">НЕДАВНЕЕ</div><div class="sec-t">🕒 Вы смотрели</div></div><div class="shelf">${cards.join('')}</div>`;
+  }
+
   $('s-home').innerHTML= promoH + `
     <div class="hero"><h1>ZAMON</h1><p>Игры, подписки и пополнения дешевле · выдача 10–60 мин</p>
       <div class="hero-stats"><div><b>${n}</b><span>PS игр</span></div><div><b>${stN}</b><span>Steam</span></div><div><b>16 000+</b><span>отзывов</span></div></div>
@@ -542,10 +565,11 @@ Z.rHome=()=>{
         <div class="sc sc-gc" role="button" tabindex="0" onclick="Z.go('gifts')"><b>Подарочные карты</b><small>Apple · Google</small></div>
       </div>
     </div>
+    ${recentH}
     ${stepsH}
+    ${dealsH}
     ${mixedH}
     ${rvH}
-    ${dealsH}
     <div class="pad"><div class="eyebrow">СЕРВИСЫ</div><div class="sec-t">🤖 AI-подписки</div>
       ${SUBS.map(s=>`<div class="li" role="button" tabindex="0" onclick="Z.openS('${s.u}')"><img class="li-ico" src="${CDN}${s.img}" loading="lazy" onerror="this.style.display='none'"><div class="li-info"><div class="li-n">${esc(s.n)}</div><div class="li-d">${esc(s.d)}</div></div><div class="li-p"><div class="li-from">от</div>${fmt(s.from)}</div></div>`).join('')}
       <button class="btn btn-soft" style="margin-top:12px" onclick="Z.go('subs')">Все подписки →</button>
@@ -826,6 +850,7 @@ Z.rRev=async()=>{const el=$('s-reviews');if(!Z.reviews){el.innerHTML=`<div class
 Z.rProd=p=>{if(!p)return;({ps:Z.rProdPS,st:Z.rProdST,xb:Z.rProdXB})[p.t]?.(p.id)};
 
 Z.rProdPS=id=>{const el=$('s-product'),g=Z.ps?.[id];if(!g){el.innerHTML='<div class="empty"><b>🔍</b>Игра не найдена</div>';return}
+  Z._addRecent('ps',id);
   const d=Z.psD?.[id]||{},hero=d.hero||d.shots?.[0]||d.edimg?.['0']||'',eds=g.eds||[['Standard',g.uah]],isPre=!!g.pre;
   Z.sel={plan:isPre?'p3':'p2',ed:0,cons:'PS5',rk:'ua',reg:0,pid:id};
   const u0=eds[0][1],p2=Z.dgP(u0,.30),p3=Z.dgP(u0,.61);
@@ -834,7 +859,8 @@ Z.rProdPS=id=>{const el=$('s-product'),g=Z.ps?.[id];if(!g){el.innerHTML='<div cl
   Z._p1Opts=p1Opts;
 
   const deal=g.deal&&g.deal.end*1000>Date.now();
-  const dealBanner = deal ? `<div class="deal-banner"><span class="deal-pct">-${Math.round((1-g.deal.disc/g.deal.full)*100)}%</span><div><b>Скидка в PS Store</b><small>Осталось ${Z.timer(g.deal.end)}</small></div></div>` : '';
+  const savings=deal?Math.round(Z.dgP(g.deal.full,.30)-Z.dgP(g.deal.disc,.30)):0;
+  const dealBanner=deal?`<div class="deal-banner"><span class="deal-pct">-${Math.round((1-g.deal.disc/g.deal.full)*100)}%</span><div><b>Скидка в PS Store</b><small>Осталось ${Z.timer(g.deal.end)}${savings>0?' · Экономия '+fmt(savings):''}</small></div></div>`:'';
 
   const videoH = d.video ? `<div style="margin:8px 16px"><a href="${d.video}" target="_blank" style="display:flex;align-items:center;gap:8px;padding:12px;border:1px solid var(--border-2);border-radius:14px;background:var(--surface)"><span style="font-size:1.5rem">▶️</span><div><b style="font-size:.85rem">Смотреть трейлер</b><br><small style="font-size:.72rem;color:var(--text-2)">YouTube</small></div></a></div>` : '';
 
@@ -847,12 +873,12 @@ Z.rProdPS=id=>{const el=$('s-product'),g=Z.ps?.[id];if(!g){el.innerHTML='<div cl
     'Digital Deluxe': 'Цифровые бонусы'
   };
 
-  el.innerHTML=`<div>${hero?`<img class="pd-hero" src="${hero}" loading="lazy" onerror="this.style.display='none'">`:''}${videoH}<div class="pad">
-    <div class="pd-t">${esc(g.n)}</div>
+  el.innerHTML=`<div>${hero?`<img class="pd-hero" src="${hero}" onload="this.classList.add('ld')" loading="lazy" onerror="this.style.display='none'">`:''}${videoH}<div class="pad">
+    <div style="display:flex;justify-content:space-between;align-items:flex-start"><div class="pd-t">${esc(g.n)}</div><button style="margin-top:6px;font-size:.78rem;color:var(--accent);font-weight:600;flex-shrink:0;margin-left:12px" onclick="Z._share('${esc(g.n).replace(/'/g,"\\'")}')">📤 Поделиться</button></div>
     <div class="pd-meta"><span>${g.ps4?'PS4 · PS5':'PS5'}</span>${d.mode?`<span>· ${d.mode}</span>`:''}</div>
     ${d.desc?`<div class="pd-desc">${esc(d.desc)}</div>`:''}</div>
     ${dealBanner}
-    ${(d.shots||[]).length?`<div class="shots">${d.shots.slice(0,6).map(s=>`<img src="${s}" loading="lazy" onerror="this.style.display='none'">`).join('')}</div>${d.shots.length>1?`<div style="text-align:center;font-size:.72rem;color:var(--text-3);padding:2px 0">${Math.min(d.shots.length,6)} скриншотов · листайте →</div>`:''}`:''}
+    ${(d.shots||[]).length?`<div class="shots">${d.shots.slice(0,6).map(s=>`<img src="${s}" onload="this.classList.add('ld')" loading="lazy" onerror="this.style.display='none'">`).join('')}</div>${d.shots.length>1?`<div style="text-align:center;font-size:.72rem;color:var(--text-3);padding:2px 0">${Math.min(d.shots.length,6)} скриншотов · листайте →</div>`:''}`:''}
     <div class="pad">
       ${eds.length>1?`<div class="eyebrow">ИЗДАНИЕ</div>${eds.map((e,i)=>{
         const desc = d.edinfo?.[e[0]] || edDesc[e[0]] || 'Специальное издание';
@@ -918,6 +944,7 @@ Z._pP1=(ri,el)=>{const opts=Z._p1Opts;Z.sel.plan='p1';Z.sel.rk=opts?.[ri]?.rk||'
   document.querySelectorAll('#p1l .p1-opt').forEach((e,j)=>e.classList.toggle('on',j===ri));Z._upd()};
 
 Z.rProdST=id=>{const el=$('s-product'),g=Z.steam?.[id];if(!g){el.innerHTML='<div class="empty"><b>🔍</b>Не найдено</div>';return}
+  Z._addRecent('st',id);
   const tags = g.genres || [];
   const devH = g.dev ? `<div class="pd-meta" style="margin-bottom:6px"><span>👤 ${esc(g.dev)}</span></div>` : '';
   const tagsH = tags.length ? `<div class="gc-tags" style="margin-bottom:10px">${tags.slice(0,4).map(t=>`<span class="gc-tag">${t}</span>`).join('')}</div>` : '';
@@ -927,8 +954,9 @@ Z.rProdST=id=>{const el=$('s-product'),g=Z.steam?.[id];if(!g){el.innerHTML='<div
     <div class="zcard" role="button" tabindex="0"><div><b>Ключ активации (Global)</b><small>Моментально на почту</small></div><strong>${fmt(g.price*1.15)}</strong></div>
   </div>` : '';
   
-  el.innerHTML=`<div>${g.wide||g.header?`<img class="pd-hero" onerror="this.style.display='none'" src="${g.wide||g.header}">`:''}
-    <div class="pad"><div class="pd-t">${esc(g.name)}</div>
+  el.innerHTML=`<div>${g.wide||g.header?`<img class="pd-hero" onload="this.classList.add('ld')" onerror="this.style.display='none'" src="${g.wide||g.header}">`:''}
+    <div class="pad">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start"><div class="pd-t">${esc(g.name)}</div><button style="margin-top:6px;font-size:.78rem;color:var(--accent);font-weight:600;flex-shrink:0;margin-left:12px" onclick="Z._share('${esc(g.name).replace(/'/g,"\\'")}')">📤 Поделиться</button></div>
       ${devH}
       <div class="pd-meta"><span>Steam</span>${g.mc?`<span style="color:var(--ok);font-weight:700">MC ${g.mc}</span>`:''}</div>
       ${tagsH}
@@ -936,7 +964,7 @@ Z.rProdST=id=>{const el=$('s-product'),g=Z.steam?.[id];if(!g){el.innerHTML='<div
       ${typeSel}
       ${sysH}
     </div>
-    ${(g.shots||[]).length?`<div class="shots">${g.shots.slice(0,6).map(s=>`<img src="${s}" loading="lazy" onerror="this.style.display='none'">`).join('')}</div>${g.shots.length>1?`<div style="text-align:center;font-size:.72rem;color:var(--text-3);padding:2px 0">${Math.min(g.shots.length,6)} скриншотов · листайте →</div>`:''}`:''}
+    ${(g.shots||[]).length?`<div class="shots">${g.shots.slice(0,6).map(s=>`<img src="${s}" onload="this.classList.add('ld')" loading="lazy" onerror="this.style.display='none'">`).join('')}</div>${g.shots.length>1?`<div style="text-align:center;font-size:.72rem;color:var(--text-3);padding:2px 0">${Math.min(g.shots.length,6)} скриншотов · листайте →</div>`:''}`:''}
     <div class="pad">
       <div class="trust" style="margin-bottom:12px;justify-content:center"><span>⚡ Автодоставка</span><span>🛡 Гарантия</span></div>
       <button class="btn btn-primary" onclick="Z.openS('/steam#${id}')">Купить · ${fmt(g.price)}</button>
@@ -944,6 +972,7 @@ Z.rProdST=id=>{const el=$('s-product'),g=Z.steam?.[id];if(!g){el.innerHTML='<div
   Z.showM('Купить — '+fmt(g.price),()=>Z.openS('/steam#'+id))};
 
 Z.rProdXB=id=>{const el=$('s-product'),g=Z.xbox?.games?.find(x=>x.id===id);if(!g){el.innerHTML='<div class="empty"><b>🔍</b>Не найдено</div>';return}
+  Z._addRecent('xb',id);
   const mp=Math.min(...g.vars.map(v=>v.price));
   const faqH = `<div style="margin-top:16px">
     <div class="eyebrow">ЧАСТЫЕ ВОПРОСЫ</div>
@@ -959,8 +988,10 @@ Z.rProdXB=id=>{const el=$('s-product'),g=Z.xbox?.games?.find(x=>x.id===id);if(!g
         <p>Да! Если товар не выдан или невалиден — вернём деньги. Гарантия возврата.</p></details>
     </div>
   </div>`;
-  el.innerHTML=`<div>${g.hero?`<img class="pd-hero" onerror="this.style.display='none'" src="${g.hero}">`:''}
-    <div class="pad"><div class="pd-t">${esc(g.n)}</div><div class="pd-meta"><span>Xbox</span></div>
+  el.innerHTML=`<div>${g.hero?`<img class="pd-hero" onload="this.classList.add('ld')" onerror="this.style.display='none'" src="${g.hero}">`:''}
+    <div class="pad">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start"><div class="pd-t">${esc(g.n)}</div><button style="margin-top:6px;font-size:.78rem;color:var(--accent);font-weight:600;flex-shrink:0;margin-left:12px" onclick="Z._share('${esc(g.n).replace(/'/g,"\\'")}')">📤 Поделиться</button></div>
+      <div class="pd-meta"><span>Xbox</span></div>
       <div style="margin-top:12px">
         ${g.vars.map((v,i)=>`<div class="zcard${i===0?' on':''}" role="button" tabindex="0" onclick="this.parentElement.querySelectorAll('.zcard').forEach(x=>x.classList.remove('on'));this.classList.add('on')"><div><b>${esc(v.edn)}</b></div><strong>${fmt(v.price)}</strong></div>`).join('')}
       </div>
@@ -972,14 +1003,15 @@ Z.rProdXB=id=>{const el=$('s-product'),g=Z.xbox?.games?.find(x=>x.id===id);if(!g
 
 /* ═══ Search ═══ */
 Z.rSearch=()=>{$('s-search').innerHTML=`<div class="sbar"><input class="sinput" type="search" placeholder="Найти игру, подписку…" oninput="Z._doS(this.value)" autofocus></div><div id="sR" class="pad"><div class="empty"><b>🔍</b>Введите название</div></div>`};
-let _st;Z._doS=q=>{clearTimeout(_st);_st=setTimeout(()=>Z._exS(q),200)};
+let _st;Z._doS=q=>{clearTimeout(_st);if(!q.trim()){$('sR').innerHTML=`<div class="empty"><b>🔍</b>Введите название</div>`;return}$('sR').innerHTML='<div class="loading"><div class="spin"></div>Поиск…</div>';_st=setTimeout(()=>Z._exS(q),350)};
 Z._exS=q=>{const o=$('sR');if(!o)return;q=q.trim().toLowerCase();if(q.length<2){o.innerHTML='<div class="empty"><b>🔍</b>Введите название</div>';return}
   let r=[];if(Z.ps)for(const[id,g]of Object.entries(Z.ps)){if(g.n.toLowerCase().includes(q))r.push({t:'ps',id,n:g.n,p:Z.dgP(g.uah,.30),img:Z.psD?.[id]?.edimg?.['0']||Z.psD?.[id]?.hero||'',pl:'PS Store'})}
   if(Z.si)for(const it of Z.si){if(it[2].toLowerCase().includes(q))r.push({t:it[0]==='s'?'st':'xb',id:String(it[1]),n:it[2],p:it[3],img:it[4]||'',pl:it[0]==='s'?'Steam':'Xbox'})}
   for(const s of SUBS)if(s.n.toLowerCase().includes(q))r.push({t:'sub',n:s.n,p:s.from,img:CDN+s.img,pl:'AI',u:s.u});
   if(!r.length){o.innerHTML='<div class="empty"><b>😔</b>Ничего не найдено</div>';return}
-  o.innerHTML=r.slice(0,25).map(x=>`<div class="li" onclick="${x.t==='sub'?`Z.openS('${x.u}')`:`Z.go('product',{t:'${x.t}',id:'${x.id}'})`}">
-    ${x.img?`<img class="li-ico" src="${x.img}" loading="lazy" onerror="this.style.display='none'">`:'<div class="li-ico"></div>'}<div class="li-info"><div class="li-n">${esc(x.n)}</div><div class="li-d" style="color:var(--accent);font-weight:600;font-size:.7rem;margin-top:2px">${x.pl}</div></div><div class="li-p">${fmt(x.p)}</div></div>`).join('')};
+  const hl=(name,query)=>{const idx=name.toLowerCase().indexOf(query);if(idx===-1)return esc(name);return esc(name.slice(0,idx))+'<mark>'+esc(name.slice(idx,idx+query.length))+'</mark>'+esc(name.slice(idx+query.length))};
+  o.innerHTML=r.slice(0,25).map(x=>`<div class="li" role="button" tabindex="0" onclick="${x.t==='sub'?`Z.openS('${x.u}')`:`Z.go('product',{t:'${x.t}',id:'${x.id}'})`}">
+    ${x.img?`<img class="li-ico" onload="this.classList.add('ld')" src="${x.img}" loading="lazy" onerror="this.style.display='none'">`:'<div class="li-ico"></div>'}<div class="li-info"><div class="li-n">${hl(x.n,q)}</div><div class="li-d" style="color:var(--accent);font-weight:600;font-size:.7rem;margin-top:2px">${x.pl}</div></div><div class="li-p">${fmt(x.p)}</div></div>`).join('')};
 
 /* ═══ Favs ═══ */
 Z.rFavs=()=>{const el=$('s-favs');if(!Z.favs.size){el.innerHTML=`<div class="empty" style="padding:60px 20px">
