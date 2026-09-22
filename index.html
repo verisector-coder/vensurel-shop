@@ -39,7 +39,7 @@ button,input{font:inherit;border:none;background:none;color:inherit;cursor:point
 ::-webkit-scrollbar{display:none}
 
 /* ── Dock (= site mobile-dock) ── */
-.dock{position:fixed;left:0;right:0;bottom:0;z-index:1350;display:grid;grid-template-columns:repeat(4,1fr);
+.dock{position:fixed;left:0;right:0;bottom:0;z-index:1350;display:grid;grid-template-columns:repeat(5,1fr);
   min-height:62px;padding:4px 5px calc(4px + env(safe-area-inset-bottom,0px));
   background:color-mix(in srgb,var(--surface) 94%,transparent);border-top:1px solid var(--border-2);
   box-shadow:0 -8px 26px rgba(0,0,0,.09);backdrop-filter:saturate(180%) blur(20px);-webkit-backdrop-filter:saturate(180%) blur(20px)}
@@ -214,7 +214,19 @@ html[data-theme="dark"] .chip.on{background:var(--accent);border-color:var(--acc
   background:var(--text);color:var(--bg);padding:8px 20px;border-radius:980px;font-weight:600;font-size:.82rem;
   z-index:9999;opacity:0;transition:.3s var(--ease);pointer-events:none;white-space:nowrap}
 .toast.on{transform:translateX(-50%) translateY(0);opacity:1}
-.screen{display:none;min-height:100vh}.screen.on{display:block}
+.screen{display:none;min-height:100vh;animation:fadeUp .25s var(--ease)}
+.screen.on{display:block}
+@keyframes fadeUp{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
+.skel{border-radius:12px;background:linear-gradient(90deg,var(--bg-alt) 25%,color-mix(in srgb,var(--text) 5%,var(--bg-alt)) 50%,var(--bg-alt) 75%);background-size:200% 100%;animation:shimmer 1.5s ease-in-out infinite}
+@keyframes shimmer{0%{background-position:200% 0}100%{background-position:-200% 0}}
+.skel-card{height:200px;margin:8px}
+.skel-row{height:16px;margin:8px 16px;width:60%}
+.skel-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:16px}
+.faq-item{border:1px solid var(--border-2);border-radius:12px;margin-bottom:6px;overflow:hidden}
+.faq-item summary{padding:12px 14px;font-weight:600;font-size:.85rem;cursor:pointer;list-style:none;display:flex;justify-content:space-between;align-items:center}
+.faq-item summary::after{content:'＋';font-size:1rem;color:var(--text-3);transition:transform .2s}
+.faq-item[open] summary::after{content:'－'}
+.faq-item p{padding:0 14px 12px;font-size:.82rem;color:var(--text-2);line-height:1.45}
 
 /* ── ZAMON Updates ── */
 .hdr-back{padding:6px;display:flex;align-items:center;cursor:pointer;background:none;border:none}
@@ -286,12 +298,14 @@ html[data-theme="dark"] .chip.on{background:var(--accent);border-color:var(--acc
 <div id="s-product" class="screen"></div>
 <div id="s-search" class="screen"></div>
 <div id="s-favs" class="screen"></div>
+<div id="s-support" class="screen"></div>
 
 <nav class="dock">
   <button class="on" onclick="Z.tab('home')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 9.5L12 3l9 6.5V20a1 1 0 01-1 1H4a1 1 0 01-1-1V9.5z"/><path d="M9 21V12h6v9"/></svg>Главная</button>
   <button onclick="Z.tab('ps')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>Каталог</button>
   <button onclick="Z.tab('search')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.35-4.35"/></svg>Поиск</button>
   <button onclick="Z.tab('favs')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78L12 21.23l8.84-8.84a5.5 5.5 0 000-7.78z"/></svg>Избранное</button>
+  <button onclick="Z.tab('support')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>Поддержка</button>
 </nav>
 <div id="toast" class="toast"></div>
 
@@ -363,11 +377,11 @@ Z.go=(s,p)=>{Z.hist.push({s:Z.scr,y:scrollY,p:Z._lp});Z._lp=p;Z.show(s,p)};
 Z.show=(s,p)=>{document.querySelectorAll('.screen').forEach(x=>x.classList.remove('on'));Z.scr=s;
   const el=$('s-'+s);if(el)el.classList.add('on');
   ({home:Z.rHome,ps:Z.rPS,steam:Z.rSteam,xbox:Z.rXbox,subs:Z.rSubs,gifts:Z.rGifts,reviews:Z.rRev,
-    product:()=>Z.rProd(p),search:Z.rSearch,favs:Z.rFavs})[s]?.();
+    product:()=>Z.rProd(p),search:Z.rSearch,favs:Z.rFavs,support:Z.rSupport})[s]?.();
   scrollTo(0,0);Z.hideM();tg?.BackButton?.[Z.hist.length?'show':'hide']()};
 Z.back=()=>{if(!Z.hist.length)return;const h=Z.hist.pop();Z._lp=h.p;Z.show(h.s,h.p);setTimeout(()=>scrollTo(0,h.y),20)};
-Z.tab=t=>{Z.hist=[];Z.show(t==='favs'?'favs':t==='search'?'search':t==='ps'?'ps':'home');
-  document.querySelectorAll('.dock button').forEach((b,i)=>b.classList.toggle('on',['home','ps','search','favs'][i]===t));tg?.BackButton?.hide()};
+Z.tab=t=>{Z.hist=[];Z.show(t==='favs'?'favs':t==='search'?'search':t==='ps'?'ps':t==='support'?'support':'home');
+  document.querySelectorAll('.dock button').forEach((b,i)=>b.classList.toggle('on',['home','ps','search','favs','support'][i]===t));tg?.BackButton?.hide()};
 Z.showM=(t,cb)=>{if(!tg?.MainButton)return;tg.MainButton.setText(t);tg.MainButton.show();if(Z._mb)tg.MainButton.offClick(Z._mb);tg.MainButton.onClick(cb);Z._mb=cb};
 Z.hideM=()=>{if(!tg?.MainButton)return;tg.MainButton.hide();if(Z._mb){tg.MainButton.offClick(Z._mb);Z._mb=null}};
 
@@ -397,6 +411,23 @@ Z.stC=(id,g)=>`<div class="gc" onclick="Z.go('product',{t:'st',id:'${id}'})">
   <h3>${esc(g.name)}</h3><div class="gc-foot"><b>${fmt(g.price)}</b><span class="gc-buy">Выбрать →</span></div></div>`;
 
 /* ═══ Screens ═══ */
+Z.skelGrid=(n=6)=>`<div class="skel-grid">${Array(n).fill('<div class="skel skel-card"></div>').join('')}</div>`;
+Z.skelList=(n=4)=>Array(n).fill('<div class="skel skel-row"></div><div class="skel skel-row" style="width:40%"></div>').join('');
+
+Z.rSupport=()=>{
+  $('s-support').innerHTML=`<div class="hdr"><button class="hdr-back" onclick="Z.back()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg></button><div class="hdr-t">Поддержка</div></div>
+  <div class="pad">
+    <div class="sec-t">Как связаться?</div>
+    <div class="li" onclick="Z.openBot('support')"><div class="li-ico" style="background:var(--accent);display:grid;place-items:center;color:#fff;font-size:1.2rem">💬</div><div class="li-info"><div class="li-n">Telegram бот</div><div class="li-d">Быстрый ответ 24/7</div></div></div>
+    <div class="li" onclick="Z.openL('https://wa.me/992982227635')"><div class="li-ico" style="background:#25d366;display:grid;place-items:center;color:#fff;font-size:1.2rem">📱</div><div class="li-info"><div class="li-n">WhatsApp</div><div class="li-d">+992 98 222 76 35</div></div></div>
+    <div class="li" onclick="Z.openL('https://t.me/vensurel')"><div class="li-ico" style="background:#229ED9;display:grid;place-items:center;color:#fff;font-size:1.2rem">✈️</div><div class="li-info"><div class="li-n">Telegram личка</div><div class="li-d">@vensurel</div></div></div>
+    <div style="margin-top:16px">
+      <div class="eyebrow">ГАРАНТИИ</div>
+      <div class="trust"><span>🛡 Возврат денег</span><span>⚡ Ответ за 5 мин</span><span>⭐ 7 лет на рынке</span></div>
+    </div>
+  </div>`;
+};
+
 Z._promoSlides=()=>{
   const slides=[];
   if(Z.ps){
@@ -506,7 +537,8 @@ Z.rHome=()=>{
       <button class="btn btn-soft" style="margin-top:12px" onclick="Z.go('subs')">Все подписки →</button>
     </div>
     <div class="app-footer"><b>ZAMON · 7 лет на рынке</b><br>⚡ Выдача 10–15 мин · 🛡 Гарантия возврата<br>💳 Карта · СБП · USDT
-      <div class="cur-toggle" style="margin-top:8px">
+      <div style="margin-top:12px"><button class="btn btn-soft" style="padding:10px;font-size:.85rem;max-width:200px;margin:0 auto" onclick="Z.tab('support')">Служба поддержки</button></div>
+      <div class="cur-toggle" style="margin-top:12px">
         <span style="font-size:.72rem;color:var(--text-3);margin-right:6px">Валюта:</span>
         ${['RUB','KZT','UZS','TJS'].map(c=>`<button class="chip${Z.cur===c?' on':''}" style="padding:4px 10px;font-size:.72rem" onclick="Z.cur='${c}';Z.rHome()">${Z.CUR_SYM[c]}</button>`).join('')}
       </div>
@@ -574,7 +606,26 @@ Z._eaPlay=()=>{
 };
 
 Z.psFilt='all';Z.psSort='def';
-Z.rPS=()=>{const el=$('s-ps');if(!Z.ps||!Object.keys(Z.ps).length){el.innerHTML='<div class="loading"><div class="spin"></div>Загружаем каталог…</div>';Z.loadPS().then(()=>Z.rPS());return}
+Z._psPage=0;Z._psPageSize=20;
+Z._psMore=()=>{
+  Z._psPage++;
+  const grid=document.querySelector('#s-ps .ggrid');
+  if(!grid)return;
+  const start=Z._psPage*Z._psPageSize;
+  const chunk=Z._psFiltered.slice(start,start+Z._psPageSize);
+  if(!chunk.length)return;
+  const tmp=document.createElement('div');
+  tmp.innerHTML=chunk.map(([id,x])=>Z.psC(id,x)).join('');
+  while(tmp.firstChild)grid.appendChild(tmp.firstChild);
+  if(start+Z._psPageSize>=Z._psFiltered.length){
+    const btn = document.getElementById('psLoadMore');
+    if(btn) btn.style.display='none';
+  } else {
+    const btn = document.getElementById('psLoadMore');
+    if(btn) btn.textContent = `Показать ещё ${Z._psFiltered.length - (start+Z._psPageSize)} игр`;
+  }
+};
+Z.rPS=()=>{const el=$('s-ps');if(!Z.ps||!Object.keys(Z.ps).length){el.innerHTML=Z.skelGrid(6);Z.loadPS().then(()=>Z.rPS());return}
   const tabsHtml = `
     <div class="tabs">
       <div class="tab${Z.psTab==='games'?' on':''}" onclick="Z.psTab='games';Z.rPS()">Игры</div>
@@ -653,6 +704,11 @@ Z.rPS=()=>{const el=$('s-ps');if(!Z.ps||!Object.keys(Z.ps).length){el.innerHTML=
 
   if(Z.psSort==='cheap')g.sort((a,b)=>a[1].uah-b[1].uah);else if(Z.psSort==='exp')g.sort((a,b)=>b[1].uah-a[1].uah);
 
+  Z._psFiltered=g;
+  Z._psPage=0;
+  const chunk = g.slice(0, Z._psPageSize);
+  const remaining = g.length - chunk.length;
+
   el.innerHTML=tabsHtml+`<div class="hdr"><button class="hdr-back" onclick="Z.back()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg></button><div class="hdr-t">PlayStation</div><div class="hdr-cnt">${g.length} игр</div>
     <select class="sort-select" onchange="Z.psSort=this.value;Z.rPS()">
       <option value="def" ${Z.psSort==='def'?'selected':''}>По умолчанию</option>
@@ -661,25 +717,50 @@ Z.rPS=()=>{const el=$('s-ps');if(!Z.ps||!Object.keys(Z.ps).length){el.innerHTML=
     </select></div>
     <div class="chips">${['all:Все','deals:🔥 Скидки','pre:Предзаказы','ps4:PS4','new:🆕 Новинки','cheap:💰 До 1000₽','coop:👫 Для двоих'].map(x=>{const[k,l]=x.split(':');return`<button class="chip${f===k?' on':''}" onclick="Z.psFilt='${k}';Z.rPS()">${l}</button>`}).join('')}</div>
     ${shelvesH}
-    <div class="pad" style="padding-top:0">${Z.psFilt==='all'?'<div class="sec-t">Все игры</div>':''}<div class="ggrid">${g.map(([id,x])=>Z.psC(id,x)).join('')}
-    <div class="gc" onclick="Z.openBot('support')" style="border:2px dashed var(--border);display:flex;align-items:center;justify-content:center;text-align:center;min-height:180px">
+    <div class="pad" style="padding-top:0">${Z.psFilt==='all'?'<div class="sec-t">Все игры</div>':''}
+    <div class="ggrid">${chunk.map(([id,x])=>Z.psC(id,x)).join('')}</div>
+    ${remaining>0 ? `<button id="psLoadMore" class="btn btn-soft" style="margin-top:12px" onclick="Z._psMore()">Показать ещё ${remaining} игр</button>` : ''}
+    <div class="gc" onclick="Z.openBot('support')" style="border:2px dashed var(--border);display:flex;align-items:center;justify-content:center;text-align:center;min-height:180px;margin-top:10px;grid-column:1/-1">
       <div><b style="font-size:1.5rem">🎮</b><h3 style="min-height:auto">Нет нужной игры?</h3>
       <p style="font-size:.78rem;color:var(--text-2);margin-top:4px">Достанем любую игру PS Store — напишите нам</p></div>
     </div>
-    </div></div>`};
+    </div>`};
 
 Z.stFilt='all';Z.stSort='def';
-Z.rSteam=async()=>{const el=$('s-steam');if(!Z.steam){el.innerHTML='<div class="loading"><div class="spin"></div>Загружаем Steam…</div>';await Z.loadSteam()}
+Z._stPage=0;Z._stPageSize=20;
+Z._stMore=()=>{
+  Z._stPage++;
+  const grid=document.querySelector('#s-steam .ggrid');
+  if(!grid)return;
+  const start=Z._stPage*Z._stPageSize;
+  const chunk=Z._stFiltered.slice(start,start+Z._stPageSize);
+  if(!chunk.length)return;
+  const tmp=document.createElement('div');
+  tmp.innerHTML=chunk.map(([id,x])=>Z.stC(id,x)).join('');
+  while(tmp.firstChild)grid.appendChild(tmp.firstChild);
+  if(start+Z._stPageSize>=Z._stFiltered.length){
+    const btn=document.getElementById('stLoadMore');
+    if(btn) btn.style.display='none';
+  } else {
+    const btn = document.getElementById('stLoadMore');
+    if(btn) btn.textContent = `Показать ещё ${Z._stFiltered.length - (start+Z._stPageSize)} игр`;
+  }
+};
+Z.rSteam=async()=>{const el=$('s-steam');if(!Z.steam){el.innerHTML=Z.skelGrid(6);await Z.loadSteam()}
   if(!Z.steam||!Object.keys(Z.steam).length){el.innerHTML='<div class="empty"><b>😔</b>Не удалось загрузить</div>';return}
   let g=Object.entries(Z.steam);const f=Z.stFilt;
   if(f==='disc')g=g.filter(([,x])=>x.steam_disc>0);
   else if(f==='new')g=g.slice(0,20);
   if(Z.stSort==='cheap')g.sort((a,b)=>a[1].price-b[1].price);else if(Z.stSort==='exp')g.sort((a,b)=>b[1].price-a[1].price);
 
+  Z._stFiltered=g;
+  Z._stPage=0;
+  const chunk=g.slice(0,Z._stPageSize);
+  const rem=g.length-chunk.length;
+
   let top='';
   if(Z.stFilt==='all'&&Z.shelves?.top?.length)top=`<div class="pad"><div class="eyebrow">ТОП</div><div class="sec-t">🔥 Популярное в Steam</div></div><div class="shelf">${Z.shelves.top.slice(0,12).map(a=>{const x=Z.steam[a];return x?Z.stC(a,x):''}).join('')}</div>`;
 
-  Z._stG = g;
   el.innerHTML=`<div class="hdr"><button class="hdr-back" onclick="Z.back()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg></button><div class="hdr-t">Steam</div><div class="hdr-cnt">${g.length} игр</div>
     <select class="sort-select" onchange="Z.stSort=this.value;Z.rSteam()">
       <option value="def" ${Z.stSort==='def'?'selected':''}>По умолчанию</option>
@@ -688,11 +769,12 @@ Z.rSteam=async()=>{const el=$('s-steam');if(!Z.steam){el.innerHTML='<div class="
     </select></div>
     <div class="chips">${['all:Все','disc:🔥 Скидки','new:🆕 Новинки'].map(x=>{const[k,l]=x.split(':');return`<button class="chip${f===k?' on':''}" onclick="Z.stFilt='${k}';Z.rSteam()">${l}</button>`}).join('')}</div>
     ${top}
-    <div class="pad" style="padding-top:0"><div class="sec-t">Все игры</div><div class="ggrid" id="stG">${g.slice(0,40).map(([id,x])=>Z.stC(id,x)).join('')}</div>
-      ${g.length>40?`<button class="btn btn-soft" style="margin-top:12px" onclick="$('stG').innerHTML=Z._stG.map(([id,x])=>Z.stC(id,x)).join('');this.remove()">Показать все ${g.length}</button>`:''}</div>`};
+    <div class="pad" style="padding-top:0"><div class="sec-t">Все игры</div>
+    <div class="ggrid" id="stG">${chunk.map(([id,x])=>Z.stC(id,x)).join('')}</div>
+      ${rem>0?`<button id="stLoadMore" class="btn btn-soft" style="margin-top:12px" onclick="Z._stMore()">Показать ещё ${rem} игр</button>`:''}</div>`};
 
 Z.xbFilt='all';
-Z.rXbox=async()=>{const el=$('s-xbox');if(!Z.xbox){el.innerHTML='<div class="loading"><div class="spin"></div>Загружаем Xbox…</div>';await Z.loadXbox()}
+Z.rXbox=async()=>{const el=$('s-xbox');if(!Z.xbox){el.innerHTML=Z.skelGrid(6);await Z.loadXbox()}
   if(!Z.xbox?.games?.length){el.innerHTML='<div class="empty"><b>😔</b>Не удалось загрузить</div>';return}
   let gs=Z.xbox.games;const f=Z.xbFilt;
   if(f==='gp')gs=gs.filter(x=>x.gp);else if(f==='games')gs=gs.filter(x=>!x.dlc);
@@ -716,7 +798,7 @@ Z.rGifts=()=>{const G=[
   $('s-gifts').innerHTML=`<div class="hdr"><button class="hdr-back" onclick="Z.back()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg></button><div class="hdr-t">Подарочные карты</div></div><div class="pad"><div class="sc-grid">
     ${G.map(([n,img,bg])=>`<div class="sc sc-gc" onclick="Z.openBot('gifts')" style="min-height:70px;background:${bg};display:flex;align-items:center;gap:10px;justify-content:flex-start;padding:12px"><img src="${img}" style="width:32px;height:32px;object-fit:contain" onerror="this.style.display='none'"><small style="font-size:14px;font-weight:700;opacity:1">${n}</small></div>`).join('')}</div></div>`};
 
-Z.rRev=async()=>{const el=$('s-reviews');if(!Z.reviews){el.innerHTML='<div class="loading"><div class="spin"></div>Загружаем отзывы…</div>';await Z.loadRev()}
+Z.rRev=async()=>{const el=$('s-reviews');if(!Z.reviews){el.innerHTML=`<div class="pad">${Z.skelList(4)}</div>`;await Z.loadRev()}
   if(!Z.reviews){el.innerHTML='<div class="empty"><b>😔</b>Не удалось</div>';return}const r=Z.reviews,tot=parseInt(r.count||0)+parseInt(r.avito?.count||0);
   el.innerHTML=`<div class="hdr"><button class="hdr-back" onclick="Z.back()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg></button><div class="hdr-t">Отзывы</div><div class="hdr-cnt">${tot.toLocaleString()}</div></div>
     <div class="rv-banner"><div><div class="rv-rate">${r.rating} ★</div></div><div style="flex:1"><b>${tot.toLocaleString()} отзывов</b><div style="font-size:11px;opacity:.8">FunPay + Авито</div></div></div>
@@ -774,6 +856,20 @@ Z.rProdPS=id=>{const el=$('s-product'),g=Z.ps?.[id];if(!g){el.innerHTML='<div cl
         <div class="chips"><button class="chip on" onclick="Z.sel.cons='PS5';this.parentElement.querySelectorAll('.chip').forEach((e,i)=>e.classList.toggle('on',i===0));hap()">PS5</button><button class="chip" onclick="Z.sel.cons='PS4';this.parentElement.querySelectorAll('.chip').forEach((e,i)=>e.classList.toggle('on',i===1));hap()">PS4</button></div></div>`:''}
 
       <div class="trust"><span>⚡ Выдача 10–15 мин</span><span>🛡 Гарантия возврата</span><span>💬 Поддержка</span></div>
+      ${`<div style="margin-top:16px">
+        <div class="eyebrow">ЧАСТЫЕ ВОПРОСЫ</div>
+        <div class="faq">
+          <details class="faq-item"><summary>Что такое П2 и П3?</summary>
+            <p>П2 — общий аккаунт, нужен интернет для запуска. Самый дешёвый вариант.<br>
+            П3 — играете со своего профиля, работает онлайн и оффлайн. Рекомендуем.</p></details>
+          <details class="faq-item"><summary>Что такое П1?</summary>
+            <p>П1 — покупка навсегда на ваш аккаунт PSN. Вы выбираете регион, и игра привязывается к вашему аккаунту навсегда.</p></details>
+          <details class="faq-item"><summary>Как происходит выдача?</summary>
+            <p>После оплаты вы получите данные для активации прямо в Telegram за 10–15 минут. Поддержка поможет, если возникнут вопросы.</p></details>
+          <details class="faq-item"><summary>Можно ли вернуть деньги?</summary>
+            <p>Да! Если товар не выдан или невалиден — вернём деньги. Гарантия возврата.</p></details>
+        </div>
+      </div>`}
       ${d.dlc?.length ? `<div style="margin-top:16px">
         <div class="eyebrow">ДОПОЛНЕНИЯ</div>
         <div class="sec-t">🧩 DLC к ${esc(g.n)}</div>
